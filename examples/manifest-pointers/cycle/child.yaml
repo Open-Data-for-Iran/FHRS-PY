@@ -1,0 +1,4 @@
+title: Circular child
+collections:
+  back:
+    manifest: ./fhrs.yaml

@@ -1,0 +1,10 @@
+title: Survey wave 1403
+resources:
+  data:
+    locations:
+      - uri: data/households.csv
+tables:
+  households:
+    resource: data
+    reader: csv
+    title: Household observations

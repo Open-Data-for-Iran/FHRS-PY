@@ -1,0 +1,20 @@
+name: remote_observations
+title: S3 observations
+storages:
+  archive:
+    type: s3
+    bucket: example-datasets
+    prefix: observations/
+    endpoint: https://objects.example.org
+    region: us-east-1
+    storage_options:
+      anon: true
+resources:
+  data:
+    locations:
+      - storage: archive
+        uri: observations.csv
+tables:
+  observations:
+    resource: data
+    reader: csv

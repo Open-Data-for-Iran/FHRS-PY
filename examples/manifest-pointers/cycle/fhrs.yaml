@@ -1,0 +1,5 @@
+fhrs_version: "0.1"
+name: circular-pointers
+collections:
+  child:
+    manifest: child.yaml

@@ -1,0 +1,11 @@
+name: observations
+title: Basic observations
+resources:
+  data:
+    locations:
+      - uri: data/observations.csv
+tables:
+  observations:
+    resource: data
+    reader: csv
+    title: Observations

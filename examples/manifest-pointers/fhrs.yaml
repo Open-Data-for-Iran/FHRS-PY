@@ -1,0 +1,11 @@
+fhrs_version: "0.1"
+name: manifest-pointers
+title: Survey with manifest pointers
+collections:
+  waves:
+    title: Annual waves
+    collections:
+      "1402":
+        manifest: waves/1402.yaml
+      "1403":
+        manifest: waves/1403.yaml

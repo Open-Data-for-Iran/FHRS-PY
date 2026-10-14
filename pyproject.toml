@@ -1,0 +1,29 @@
+[project]
+name = "fhrs-py"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Mohammad Amin Alavian", email = "m.amin.alavian@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fsspec[http]>=2026.9.0",
+    "pydantic>=2.14.1",
+    "requests>=2.34.2",
+    "ruamel-yaml>=0.19.1",
+]
+
+[project.optional-dependencies]
+s3 = ["s3fs>=2026.9.0"]
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "fhrs"
+
+[dependency-groups]
+dev = ["ruff>=0.14"]
+marimo = ["marimo>=0.25.1"]

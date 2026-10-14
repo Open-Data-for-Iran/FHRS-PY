@@ -1,0 +1,14 @@
+name: survey
+title: Survey collections
+collections:
+  documentation:
+    title: Survey documentation
+    resources:
+      readme:
+        locations:
+          - uri: ../../README.md
+  waves:
+    title: Survey waves
+    collections:
+      "1403":
+        manifest: ../waves/1403/.fhrs.yaml

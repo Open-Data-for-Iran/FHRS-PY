@@ -1,0 +1,10 @@
+name: observations
+title: Manifest in a hidden directory
+resources:
+  data:
+    locations:
+      - uri: ../../basic/data/observations.csv
+tables:
+  observations:
+    resource: data
+    reader: csv
