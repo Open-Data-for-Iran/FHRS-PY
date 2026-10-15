@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 from ...manifest.models.table import Table as TableManifest
 from ._base import BaseRuntime
+from .member import ResourceMember
 from .resource import Resource
 
 if TYPE_CHECKING:
@@ -19,11 +20,11 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class Table(BaseRuntime):
-    """A table declaration bound to ordered resources in the same manifest node."""
+    """A table bound to ordered resources or members in the same manifest node."""
 
     manifest: TableManifest
     name: str
-    resources: list[Resource] = field(repr=False)
+    resources: list[Resource | ResourceMember] = field(repr=False)
 
     def __post_init__(self) -> None:
         if not self.resources:
@@ -72,10 +73,34 @@ class Table(BaseRuntime):
     ) -> pd.DataFrame | pl.DataFrame:
         """Load a DataFrame using the table reader and optional named source.
 
-        Planned readers are csv, parquet, and excel (Excel workbooks).
-        Loading is not implemented yet.
-
         Defaults to pandas. Source selects a location name, then a storage name;
-        omission uses declared mirror order. Keyword arguments configure the reader.
+        omission uses the first declared mirror. Keyword arguments configure the
+        registered reader. Results are concatenated in resource reference order.
         """
-        raise NotImplementedError("Table loading is not implemented yet")
+        from ..readers import READERS
+
+        if backend not in ("pandas", "polars"):
+            raise ValueError(f"Unsupported table backend: {backend!r}")
+        try:
+            reader = READERS[self.reader]
+        except KeyError:
+            raise ValueError(f"Unknown table reader: {self.reader!r}") from None
+
+        if backend == "pandas":
+            import pandas as pd
+
+            frames = [
+                reader.read_pandas(resource, source=source, **kwargs)
+                for resource in self.resources
+            ]
+            return (
+                frames[0] if len(frames) == 1 else pd.concat(frames, ignore_index=True)
+            )
+
+        import polars as pl
+
+        frames = [
+            reader.read_polars(resource, source=source, **kwargs)
+            for resource in self.resources
+        ]
+        return frames[0] if len(frames) == 1 else pl.concat(frames)

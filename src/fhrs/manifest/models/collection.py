@@ -36,7 +36,7 @@ class BaseCollection(BaseModel, extra="forbid"):
                 [table.resource] if isinstance(table.resource, str) else table.resource
             )
             for reference in references:
-                if reference not in self.resources:
+                if reference.partition("#")[0] not in self.resources:
                     raise ValueError(
                         f"Table {name!r} references unknown local resource {reference!r}"
                     )

@@ -14,6 +14,7 @@ from ...manifest.models.collection import ManifestReference
 if TYPE_CHECKING:
     from .collection import Collection
     from .dataset import Dataset
+    from .member import ResourceMember
     from .resource import Resource
     from .table import Table
 
@@ -101,8 +102,11 @@ class BaseCollection(BaseRuntime, ABC):
     def description(self) -> str | None:
         return self.manifest.description
 
-    def resource(self, name: str) -> Resource:
-        return self.resources[name]
+    def resource(self, name: str) -> Resource | ResourceMember:
+        """Resolve a local resource or its declared/inline member after ``#``."""
+        resource_name, separator, member = name.partition("#")
+        resource = self.resources[resource_name]
+        return resource.member(member) if separator else resource
 
     def table(self, name: str) -> Table:
         return self.tables[name]

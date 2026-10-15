@@ -85,7 +85,7 @@ class RuntimeLoaderTests(unittest.TestCase):
         self.assertEqual(wave.source.urlpath, f"{root}/sub/child.yaml")
         self.assertEqual(wave.source.storage_options, {"protocol": "memory"})
         self.assertTrue(wave.source.exists())
-        self.assertIs(wave.collection("inline").source, wave.source)
+        self.assertIs(wave.collection("inline").source, dataset.source)
 
 
 if __name__ == "__main__":

@@ -119,13 +119,60 @@ tables:
     reader: csv
 ```
 
-Runtime `table.resources` is always a list of bound `Resource` objects, in declared
-order; a single name produces a one-element list. Every name must exist in the
-table's owning node.
+Runtime `table.resources` is always a list of bound `Resource` or `ResourceMember`
+objects, in declared order; a single reference produces a one-element list.
+Resource names resolve in the table's owning node. Append `#name` to select a
+declared member or `#member:pattern` to create an inline member:
 
-Tables can declare `reader: excel` for Excel workbook resources, alongside
-`csv` and `parquet`. `Table.load()` currently defines typed pandas/polars outputs
-and reader options; its implementation remains a stub.
+```yaml
+tables:
+  household_size:
+    resource: raw_csv#household_size
+    reader: csv
+  combined:
+    resource: [standalone_csv, "raw_csv#member:parts/*.csv"]
+    reader: csv
+```
+
+`dataset.resource()` and `collection.resource()` accept these same local
+references. Missing declared members raise `KeyError` during runtime binding;
+inline patterns use the member path checks. Binding does not list or open files.
+The table's `dataset` and `parent` refer to the owning dataset/collection even
+when its first resource is a member.
+
+`Table.load()` selects the reader from `fhrs.runtime.readers.READERS` using the
+manifest's `reader` value. CSV is currently registered; `parquet` and `excel`
+can be declared but require reader implementations before loading.
+
+```python
+frame = table.load()  # pandas
+frame = table.load(backend="polars", source="embedded")
+```
+
+Table references are read in declared order and concatenated using the chosen
+backend. Source selection and reader options are forwarded to each reference.
+The default selects each resource's first mirror. Unknown readers or backends
+raise `ValueError`. Add a reader instance with `READERS["format"] = MyReader()`;
+custom readers implement `BaseReader.read_pandas()` and `read_polars()`.
+
+The CSV reader can be used directly:
+
+```python
+from fhrs.runtime.readers import CSVReader
+
+reader = CSVReader()
+frame = reader.read_pandas(resource.member("household_size"), source="embedded")
+frame = reader.read_polars(resource.member("member:parts/*.csv"))
+```
+
+It accepts file resources and members, reads the first mirror by default, and
+concatenates member files in sorted path order. Bare directory resources require
+a member selecting the files; empty matches raise `FileNotFoundError`. Reader
+options are forwarded to the chosen backend (`sep` for pandas, `separator` for
+Polars, for example). pandas chunk/iterator output is unsupported. Multiple
+pandas frames are concatenated with a fresh row index; Polars uses its default
+vertical concatenation and schema checks. Each backend is imported only when
+its read method is called.
 
 Each source exposes `filesystem` and its backend `path`. They are initialized
 together on first access and cached for reuse. `source.exists()` uses this pair

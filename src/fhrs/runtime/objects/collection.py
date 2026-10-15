@@ -26,7 +26,7 @@ class Collection(BaseCollection):
             storage = getattr(self.manifest, "_storage", None)
             parent_storage = getattr(self.parent.manifest, "_storage", None)
             source = (
-                self.parent.source
+                self.dataset.source
                 if storage is None or storage is parent_storage
                 else Source(**storage)
             )

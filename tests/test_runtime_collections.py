@@ -10,6 +10,77 @@ from fhrs.manifest import ManifestReference
 
 
 class RuntimeCollectionTests(unittest.TestCase):
+    def test_tables_bind_resources_and_members_in_order_with_owner_context(self):
+        contents = {
+            "resources": {
+                "raw": {
+                    "type": "directory",
+                    "locations": [{"uri": "memory://tables/data/"}],
+                    "members": {"households": "01.csv"},
+                },
+                "standalone": {"locations": [{"uri": "memory://tables/other.csv"}]},
+            },
+            "tables": {
+                "declared": {"resource": "raw#households", "reader": "csv"},
+                "inline": {"resource": "raw#member:nested/*.csv", "reader": "csv"},
+                "mixed": {
+                    "resource": ["raw#households", "standalone", "raw#member:*.csv"],
+                    "reader": "csv",
+                },
+            },
+        }
+        dataset = runtime.Dataset(
+            DatasetManifest.model_validate(
+                {"name": "survey", **contents, "collections": {"wave": contents}}
+            )
+        )
+        for node in (dataset, dataset.collection("wave")):
+            with self.subTest(node=type(node).__name__):
+                resource = node.resource("raw")
+                declared = node.table("declared").resources[0]
+                self.assertIs(declared, resource.member("households"))
+                self.assertIs(node.resource("raw#households"), declared)
+                inline = node.table("inline").resources[0]
+                self.assertIsInstance(inline, runtime.ResourceMember)
+                self.assertIs(inline.resource, resource)
+                self.assertEqual(inline.pattern, "nested/*.csv")
+                mixed = node.table("mixed").resources
+                self.assertIs(mixed[0], declared)
+                self.assertIs(mixed[1], node.resource("standalone"))
+                self.assertEqual(mixed[2].pattern, "*.csv")
+                for table in node.tables.values():
+                    self.assertIs(table.dataset, dataset)
+                    self.assertIs(table.parent, node)
+                self.assertEqual(set(resource.members), {"households"})
+
+    def test_invalid_table_member_references_are_rejected(self):
+        for reference, error in (
+            ("missing#member:*.csv", ValidationError),
+            ("raw#unknown", KeyError),
+            ("raw#", KeyError),
+            ("raw#member:", ValueError),
+            ("raw#member:../*.csv", ValueError),
+            ("file#member:*.csv", ValueError),
+        ):
+            with self.subTest(reference=reference), self.assertRaises(error):
+                runtime.Dataset(
+                    DatasetManifest.model_validate(
+                        {
+                            "name": "survey",
+                            "resources": {
+                                "raw": {
+                                    "type": "directory",
+                                    "locations": [{"uri": "memory://data/"}],
+                                },
+                                "file": {"locations": [{"uri": "memory://data.csv"}]},
+                            },
+                            "tables": {
+                                "rows": {"resource": reference, "reader": "csv"}
+                            },
+                        }
+                    )
+                )
+
     def test_tables_bind_single_or_multiple_resources_in_declared_order(self):
         for reference, expected in (
             ("urban", ["urban"]),
