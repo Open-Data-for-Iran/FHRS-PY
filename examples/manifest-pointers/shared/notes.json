@@ -2,7 +2,7 @@
   "title": "Shared survey notes",
   "resources": {
     "readme": {
-      "locations": [{"uri": "../README.md"}]
+      "locations": [{"uri": "README.md"}]
     }
   }
 }

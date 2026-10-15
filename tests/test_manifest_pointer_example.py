@@ -30,7 +30,7 @@ class ManifestPointerExampleTests(unittest.TestCase):
                 self.assertEqual(notes._storage["storage_options"], {})
                 resource = notes.resources["readme"]
                 readme = (
-                    Path(notes._storage["urlpath"]).parent / resource.locations[0].uri
+                    Path(dataset._storage["urlpath"]).parent / resource.locations[0].uri
                 )
                 self.assertTrue(readme.is_file())
                 shared.append(notes)

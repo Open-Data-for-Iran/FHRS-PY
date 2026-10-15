@@ -1,6 +1,6 @@
 """Manifest descriptions of physical files and directories."""
 
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -24,10 +24,20 @@ class Resource(BaseModel, extra="forbid"):
 
     type: Literal["file", "directory"] = "file"
     locations: list[Location] = Field(min_length=1)
+    size: int | None = Field(default=None, ge=0, strict=True)
     checksums: Checksums | None = None
+    members: dict[
+        Annotated[str, Field(min_length=1)], Annotated[str, Field(min_length=1)]
+    ] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def check_resource(self) -> Self:
+        if self.type == "file" and "members" in self.model_fields_set:
+            raise ValueError("File resources cannot declare members")
+        if "size" in self.model_fields_set and self.size is None:
+            raise ValueError("File size must be a nonnegative integer in bytes")
+        if self.type == "directory" and self.size is not None:
+            raise ValueError("Directory resources cannot declare file size")
         if self.type == "directory" and self.checksums is not None:
             raise ValueError("Directory resources cannot declare file checksums")
         locations = [

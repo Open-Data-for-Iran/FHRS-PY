@@ -1,0 +1,73 @@
+"""Named resources built from manifest declarations."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal
+
+from ...manifest.models.resource import Checksums, Location
+from ...manifest.models.resource import Resource as ResourceManifest
+from .._paths import _location_path
+from ._base import BaseRuntime
+from .source import Source
+
+if TYPE_CHECKING:
+    from ._base import BaseCollection
+    from .dataset import Dataset
+
+
+@dataclass(frozen=True, slots=True)
+class Resource(BaseRuntime):
+    """A named resource whose metadata comes from its validated manifest."""
+
+    manifest: ResourceManifest
+    name: str
+    dataset: Dataset = field(repr=False, compare=False)
+    parent: BaseCollection = field(repr=False, compare=False)
+    sources: tuple[Source, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Bind sources in location order without accessing their contents."""
+        resolved = []
+        for location in self.locations:
+            if location.storage is not None:
+                address = self.dataset.storage(location.storage).resolve(location.uri)
+            elif "://" in location.uri:
+                address = Source(location.uri)
+            else:
+                source = self.dataset.source
+                if source is None:
+                    raise ValueError(
+                        f"Resource {self.name!r} requires its dataset source"
+                    )
+                path = _location_path(location.uri, source.protocol)
+                address = source.resolve(path)
+            resolved.append(address)
+        self._setattr("sources", tuple(resolved))
+
+    @property
+    def type(self) -> Literal["file", "directory"]:
+        return self.manifest.type
+
+    @property
+    def locations(self) -> tuple[Location, ...]:
+        return tuple(self.manifest.locations)
+
+    @property
+    def size(self) -> int | None:
+        """Declared complete file size in bytes, if supplied."""
+        return self.manifest.size
+
+    @property
+    def checksums(self) -> Checksums | None:
+        return self.manifest.checksums
+
+    def source(self, name: str) -> Source:
+        """Find a source by location name, then storage name, in declared order."""
+        for location, source in zip(self.locations, self.sources, strict=True):
+            if location.name == name:
+                return source
+        for location, source in zip(self.locations, self.sources, strict=True):
+            if location.storage == name:
+                return source
+        raise KeyError(name)

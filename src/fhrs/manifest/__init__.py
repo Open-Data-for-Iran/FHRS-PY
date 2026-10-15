@@ -5,7 +5,7 @@ from .loader import load
 from .models.collection import BaseCollection, Collection, ManifestReference
 from .models.dataset import Dataset
 from .models.resource import Checksums, Location, Resource
-from .models.storage import BaseStorage, HTTPStorage, LocalStorage, S3Storage
+from .models.storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
 from .models.table import Table
 
 __all__ = [
@@ -14,8 +14,8 @@ __all__ = [
     "Checksums",
     "Collection",
     "Dataset",
+    "EmbeddedStorage",
     "HTTPStorage",
-    "LocalStorage",
     "Location",
     "ManifestReference",
     "Resource",

@@ -2,7 +2,7 @@ title: Survey wave 1403
 resources:
   data:
     locations:
-      - uri: data/households.csv
+      - uri: ../waves/1403/data/households.csv
 tables:
   households:
     resource: data

@@ -55,8 +55,19 @@ class ManifestLoaderTests(unittest.TestCase):
         self.assertNotIsInstance(collection, Dataset)
         self.assertEqual(collection.title, "Wave 1403")
         self.assertEqual(collection.tables["rows"].resource, "data")
+        self.assertNotIn("fhrs_version", collection.model_dump())
         self.assertIsInstance(collection.collections["child"], Collection)
         self.assertEqual(collection.collections["child"].title, "Child")
+
+    def test_internal_collection_rejects_format_version(self):
+        self.write("wave.yaml", 'fhrs_version: "0.1"\nname: wave\n')
+        path = self.write(
+            "fhrs.yaml",
+            'fhrs_version: "0.1"\nname: survey\n'
+            "collections:\n  wave:\n    manifest: wave.yaml\n",
+        )
+        with self.assertRaises(ValidationError):
+            load(path)
 
     def test_load_collection_uses_collection_validation(self):
         collection = self.load_collection(self.write("fhrs.yaml", "name: wave\n"))

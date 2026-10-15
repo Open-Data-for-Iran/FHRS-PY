@@ -21,16 +21,16 @@ class BaseStorage(BaseModel, extra="forbid"):
         return {**self.storage_options, "protocol": self.protocol}
 
 
-class LocalStorage(BaseStorage):
-    """A local directory with options for fsspec's LocalFileSystem."""
+class EmbeddedStorage(BaseStorage):
+    """Data shipped with the code, relative to the dataset manifest on its filesystem."""
 
-    type: Literal["local"] = "local"
+    type: Literal["embedded"] = "embedded"
     protocol: Literal["file", "local"] = "file"
     path: str = Field(default="", validation_alias=AliasChoices("path", "base_path"))
 
     @property
     def base_path(self) -> str:
-        """Directory relative to the declaring manifest, or an absolute path."""
+        """Directory resolved relative to the dataset manifest."""
         return self.path
 
 

@@ -16,8 +16,10 @@ entry file inside either directory.
   child file, plus a deliberately circular example. See
   [the example README](manifest-pointers/README.md).
 
-Local resource locations and manifest references are relative to their defining
-manifest file. Storage declarations belong to the root dataset. `load()` accepts
+Relative resource locations and embedded storage bases resolve from the root
+dataset manifest, including resources declared in child collections. Collection
+manifest references resolve from the file declaring each reference. Storage
+declarations belong to the root dataset. `load()` accepts
 an explicit manifest file or discovers the entry file in a directory, then
 recursively loads referenced collections:
 
@@ -33,12 +35,12 @@ The loader accepts fsspec URLs and optional `storage_options`. Files ending
 in `.json` are parsed as JSON; YAML files use the YAML parser. Circular manifest
 references are rejected; references shared by separate branches are allowed.
 
-Named local and HTTP storage declarations use fsspec protocol names and options:
+Named embedded and HTTP storage declarations use fsspec protocol names and options:
 
 ```yaml
 storages:
-  local:
-    type: local
+  embedded:
+    type: embedded
     protocol: file
     path: ../data/
   web:
@@ -51,5 +53,6 @@ storages:
 
 `base_path` and `base_url` are accepted as input aliases for `path` and `url`.
 These bases describe resource locations; only `storage_options` and `protocol`
-are passed to the fsspec filesystem constructor. Dataset and collection
-declarations accept `fhrs_version: "0.1"`, which is also the default.
+are passed to the fsspec filesystem constructor. Dataset declarations accept
+`fhrs_version: "0.1"`, which is also the default. Internal collection declarations
+omit `fhrs_version`.

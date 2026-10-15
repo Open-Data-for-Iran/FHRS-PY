@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
@@ -22,7 +22,6 @@ class BaseCollection(BaseModel, extra="forbid"):
 
     _storage: dict[str, Any] = PrivateAttr()
 
-    fhrs_version: Literal["0.1"] = "0.1"
     name: str = Field(min_length=1)
     title: str | None = Field(default=None, min_length=1)
     description: str | None = None
@@ -33,10 +32,14 @@ class BaseCollection(BaseModel, extra="forbid"):
     @model_validator(mode="after")
     def check_table_resources(self) -> Self:
         for name, table in self.tables.items():
-            if table.resource not in self.resources:
-                raise ValueError(
-                    f"Table {name!r} references unknown local resource {table.resource!r}"
-                )
+            references = (
+                [table.resource] if isinstance(table.resource, str) else table.resource
+            )
+            for reference in references:
+                if reference not in self.resources:
+                    raise ValueError(
+                        f"Table {name!r} references unknown local resource {reference!r}"
+                    )
         return self
 
 

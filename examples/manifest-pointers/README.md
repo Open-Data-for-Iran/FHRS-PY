@@ -12,7 +12,7 @@ fhrs.yaml
 ```
 
 Sharing the notes manifest across branches is allowed. Its README resource is
-relative to `shared/notes.json`, so `../README.md` identifies this document.
+relative to the root dataset manifest, so `README.md` identifies this document.
 
 From the FHRS-PY directory:
 
