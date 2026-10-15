@@ -3,6 +3,7 @@
 from ._base import BaseCollection, BaseRuntime
 from .collection import Collection
 from .dataset import Dataset
+from .member import ResourceMember
 from .resource import Resource
 from .source import Source
 from .storage import Storage
@@ -14,6 +15,7 @@ __all__ = [
     "Collection",
     "Dataset",
     "Resource",
+    "ResourceMember",
     "Source",
     "Storage",
     "Table",

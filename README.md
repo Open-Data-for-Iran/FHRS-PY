@@ -62,6 +62,54 @@ resources:
       all_csv: "**/*.csv"
 ```
 
+Runtime resources expose a read-only `members` mapping and `member(name)` lookup.
+Each `ResourceMember` carries its `name`, `pattern`, parent `resource`, and ordered
+`sources`, with one pattern address per directory mirror. Construction does not
+access files. `member.source(name)` uses the resource's location-name-first,
+storage-name-second lookup:
+
+```python
+member = resource.member("households")
+for source in member.source("local").glob():
+    with source.open() as stream:
+        ...  # Read each matched file.
+```
+
+Patterns resolve inside the directory with or without a trailing slash. Runtime
+binding rejects absolute paths, parent (`..`) segments, schemes, and backslashes.
+Use forward slashes in patterns. Expand one mirror at a time with `Source.glob()`;
+matching files from different mirrors are alternatives, not additional partitions.
+Missing member or source names raise `KeyError`; file resources have no members.
+
+`resource.member()` also accepts `member:pattern` to create a temporary inline
+member. Its name is the pattern itself; it is not added to `resource.members` or
+the manifest. The `member:` prefix is reserved for inline patterns. Unknown
+unprefixed names still raise `KeyError`.
+
+```python
+declared = resource.member("household_size")
+inline = resource.member("member:*.csv")
+exact = resource.member("member:nested/01.csv")
+```
+
+These selectors represent the part after `#` in addresses such as
+`raw_csv#household_size` and `raw_csv#member:*.csv`. Full resource/collection
+address resolution is not implemented yet. Inline members use the same directory
+path checks and mirror selection as declared members; files are listed only when
+calling `inline.source("local").glob()`.
+
+Use `member.files()` to return a sorted tuple of matching file `Source` objects
+from the first declared mirror, or `member.files(source="local")` to select a
+location/storage by name. It refreshes matches on each call, returns `()` when
+none match, and propagates filesystem errors. It does not combine mirrors or
+automatically fall back to another one. Works for declared and inline members:
+
+```python
+for source in resource.member("household_size").files(source="embedded"):
+    with source.open() as stream:
+        ...
+```
+
 A table's `resource` accepts one resource name or a nonempty ordered list:
 
 ```yaml

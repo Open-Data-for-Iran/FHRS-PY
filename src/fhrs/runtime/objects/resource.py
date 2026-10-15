@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
 
 from ...manifest.models.resource import Checksums, Location
 from ...manifest.models.resource import Resource as ResourceManifest
 from .._paths import _location_path
 from ._base import BaseRuntime
+from .member import ResourceMember
 from .source import Source
 
 if TYPE_CHECKING:
@@ -25,6 +28,7 @@ class Resource(BaseRuntime):
     dataset: Dataset = field(repr=False, compare=False)
     parent: BaseCollection = field(repr=False, compare=False)
     sources: tuple[Source, ...] = field(init=False)
+    members: Mapping[str, ResourceMember] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Bind sources in location order without accessing their contents."""
@@ -44,6 +48,26 @@ class Resource(BaseRuntime):
                 address = source.resolve(path)
             resolved.append(address)
         self._setattr("sources", tuple(resolved))
+        self._setattr(
+            "members",
+            MappingProxyType(
+                {
+                    name: ResourceMember(name, pattern, self)
+                    for name, pattern in self.manifest.members.items()
+                }
+            ),
+        )
+
+    def member(self, name: str) -> ResourceMember:
+        """Look up a declared member or bind an inline ``member:pattern``.
+
+        Accepts the selector after ``#`` in a resource address. Inline members
+        are temporary and neither modify declarations nor expand their patterns.
+        """
+        if name.startswith("member:"):
+            pattern = name.removeprefix("member:")
+            return ResourceMember(pattern, pattern, self)
+        return self.members[name]
 
     @property
     def type(self) -> Literal["file", "directory"]:
