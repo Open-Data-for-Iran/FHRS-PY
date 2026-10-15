@@ -103,13 +103,27 @@ class BaseCollection(BaseRuntime, ABC):
         return self.manifest.description
 
     def resource(self, name: str) -> Resource | ResourceMember:
-        """Resolve a local resource or its declared/inline member after ``#``."""
-        resource_name, separator, member = name.partition("#")
-        resource = self.resources[resource_name]
+        """Resolve a relative resource path and optional member selector after ``#``."""
+        resource_path, separator, member = name.partition("#")
+        node, resource_name = self._lookup_parent(resource_path)
+        resource = node.resources[resource_name]
         return resource.member(member) if separator else resource
 
     def table(self, name: str) -> Table:
-        return self.tables[name]
+        """Look up a table by name or a collection path relative to this node."""
+        node, table_name = self._lookup_parent(name)
+        return node.tables[table_name]
+
+    def _lookup_parent(self, path: str) -> tuple[BaseCollection, str]:
+        """Traverse collection segments and return the owning node and final name."""
+        parts = path.split("/")
+        node = self
+        for part in parts[:-1]:
+            child = node.collection(part)
+            if isinstance(child, ManifestReference):
+                raise TypeError(f"Cannot traverse unresolved collection {part!r}")
+            node = child
+        return node, parts[-1]
 
     def collection(self, name: str) -> Collection | ManifestReference:
         return self.collections[name]

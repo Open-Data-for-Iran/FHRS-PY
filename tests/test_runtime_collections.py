@@ -10,6 +10,71 @@ from fhrs.manifest import ManifestReference
 
 
 class RuntimeCollectionTests(unittest.TestCase):
+    def test_resource_lookup_traverses_paths_before_resolving_members(self):
+        manifest = DatasetManifest.model_validate(
+            {
+                "name": "survey",
+                "collections": {
+                    "waves": {
+                        "collections": {
+                            "1403": {
+                                "resources": {
+                                    "raw": {
+                                        "type": "directory",
+                                        "locations": [{"uri": "memory://data/1403/"}],
+                                        "members": {"households": "nested/01.csv"},
+                                    }
+                                },
+                            }
+                        }
+                    }
+                },
+            }
+        )
+        dataset = runtime.Dataset(manifest)
+        waves = dataset.collection("waves")
+        wave = waves.collection("1403")
+        raw = wave.resource("raw")
+        self.assertIs(dataset.resource("waves/1403/raw"), raw)
+        self.assertIs(waves.resource("1403/raw"), raw)
+        self.assertIs(
+            dataset.resource("waves/1403/raw#households"), raw.member("households")
+        )
+        inline = dataset.resource("waves/1403/raw#member:nested/*.csv")
+        self.assertIs(inline.resource, raw)
+        self.assertEqual(inline.pattern, "nested/*.csv")
+        self.assertEqual(inline.sources[0].urlpath, "memory://data/1403/nested/*.csv")
+        for path in (
+            "missing/raw",
+            "waves/1403/missing",
+            "waves//raw",
+            "waves/1403/raw#missing",
+        ):
+            with self.subTest(path=path), self.assertRaises(KeyError):
+                dataset.resource(path)
+        with self.assertRaisesRegex(TypeError, "unresolved"):
+            self.make_dataset().resource("external/data")
+
+    def test_table_lookup_traverses_collection_paths(self):
+        dataset = self.make_dataset()
+        wave = dataset.collection("wave")
+        nested = wave.collection("nested")
+        self.assertIs(dataset.table("wave/rows"), wave.table("rows"))
+        self.assertIs(dataset.table("wave/nested/rows"), nested.table("rows"))
+        self.assertIs(wave.table("nested/rows"), nested.table("rows"))
+        self.assertIs(dataset.table("rows"), dataset.tables["rows"])
+        for path in (
+            "missing/rows",
+            "wave/missing/rows",
+            "wave/missing",
+            "wave//rows",
+            "wave/",
+        ):
+            with self.subTest(path=path), self.assertRaises(KeyError):
+                dataset.table(path)
+        with self.assertRaisesRegex(TypeError, "unresolved"):
+            dataset.table("external/rows")
+
     def test_tables_bind_resources_and_members_in_order_with_owner_context(self):
         contents = {
             "resources": {

@@ -149,6 +149,16 @@ frame = table.load()  # pandas
 frame = table.load(backend="polars", source="embedded")
 ```
 
+`dataset.table("waves/1403/01")` is equivalent to
+`dataset.collection("waves").collection("1403").table("01")`.
+Table paths resolve relative to the dataset or collection where lookup starts.
+Resource lookup supports the same collection paths, followed by an optional
+member selector, such as `dataset.resource("waves/1403/raw_csv#household_size")`
+or `dataset.resource("waves/1403/raw_csv#member:nested/*.csv")`. Slashes after
+`#` belong to the member selector and are not traversed as collections.
+Missing path components raise `KeyError`; traversing an unresolved manifest
+reference raises `TypeError` (use `runtime.load()` to resolve manifests first).
+
 Table references are read in declared order and concatenated using the chosen
 backend. Source selection and reader options are forwarded to each reference.
 The default selects each resource's first mirror. Unknown readers or backends
