@@ -9,6 +9,7 @@ class BaseStorage(BaseModel, extra="forbid"):
     """Storage declaration with a mapping to an fsspec implementation."""
 
     protocol: str = Field(min_length=1)
+    original: bool = Field(default=False, strict=True)
     storage_options: dict[str, Any] = Field(default_factory=dict)
 
     @property

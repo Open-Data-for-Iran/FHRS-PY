@@ -15,6 +15,42 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 class ResourceLocationTests(unittest.TestCase):
+    def test_location_original_defaults_to_false_and_requires_a_boolean(self):
+        for fields, expected in (
+            ({}, False),
+            ({"original": True}, True),
+            ({"original": False}, False),
+        ):
+            with self.subTest(fields=fields):
+                dataset = runtime.Dataset(
+                    DatasetManifest.model_validate(
+                        {
+                            "name": "survey",
+                            "resources": {
+                                "data": {
+                                    "locations": [
+                                        {
+                                            "uri": "https://example.org/data.csv",
+                                            **fields,
+                                        }
+                                    ]
+                                }
+                            },
+                        }
+                    )
+                )
+                resource = dataset.resource("data")
+                self.assertIs(resource.locations[0].original, expected)
+                self.assertIs(
+                    resource.manifest.model_dump()["locations"][0]["original"], expected
+                )
+                self.assertEqual(
+                    resource.sources[0].urlpath, "https://example.org/data.csv"
+                )
+        for original in (None, "true", "false", 0, 1):
+            with self.subTest(original=original), self.assertRaises(ValidationError):
+                ResourceManifest(locations=[{"uri": "data.csv", "original": original}])
+
     def test_manifest_members_preserve_named_globs_and_validate_strings(self):
         members = {"households": "[UR]1403P3S01.csv", "nested": "**/*.csv"}
         resource = ResourceManifest(

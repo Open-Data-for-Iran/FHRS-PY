@@ -11,6 +11,7 @@ class Location(BaseModel, extra="forbid"):
     uri: str = Field(min_length=1)
     name: str | None = Field(default=None, min_length=1)
     storage: str | None = Field(default=None, min_length=1)
+    original: bool = Field(default=False, strict=True)
 
 
 class Checksums(BaseModel, extra="forbid"):
@@ -41,7 +42,7 @@ class Resource(BaseModel, extra="forbid"):
         if self.type == "directory" and self.checksums is not None:
             raise ValueError("Directory resources cannot declare file checksums")
         locations = [
-            (location.uri, location.name, location.storage)
+            (location.uri, location.name, location.storage, location.original)
             for location in self.locations
         ]
         if len(set(locations)) != len(locations):

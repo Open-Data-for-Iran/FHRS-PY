@@ -6,10 +6,37 @@ import fsspec
 from pydantic import ValidationError
 
 from fhrs.manifest import Collection, Dataset
-from fhrs.manifest.models.storage import EmbeddedStorage, HTTPStorage, S3Storage
+from fhrs.manifest.models.storage import (
+    BaseStorage,
+    EmbeddedStorage,
+    HTTPStorage,
+    S3Storage,
+)
 
 
 class StorageModelTests(unittest.TestCase):
+    def test_original_defaults_to_false_and_requires_a_boolean_for_all_storages(self):
+        for model, fields in (
+            (BaseStorage, {"protocol": "memory"}),
+            (EmbeddedStorage, {"path": "data/"}),
+            (HTTPStorage, {"url": "https://example.org/"}),
+            (S3Storage, {"bucket": "data"}),
+        ):
+            with self.subTest(model=model.__name__):
+                storage = model(**fields)
+                self.assertIs(storage.original, False)
+                options = storage.to_fsspec()
+                for original in (True, False):
+                    storage = model(**fields, original=original)
+                    self.assertIs(storage.model_dump()["original"], original)
+                    self.assertEqual(storage.to_fsspec(), options)
+                for original in (None, "true", "false", 0, 1):
+                    with (
+                        self.subTest(original=original),
+                        self.assertRaises(ValidationError),
+                    ):
+                        model(**fields, original=original)
+
     def test_format_version_on_datasets_only(self):
         self.assertEqual(Dataset(name="survey").fhrs_version, "0.1")
         self.assertEqual(Dataset(name="survey", fhrs_version="0.1").fhrs_version, "0.1")
