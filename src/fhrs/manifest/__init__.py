@@ -1,6 +1,7 @@
-"""Manifest declarations and loading."""
+"""Manifest declarations, loading, and writing."""
 
 from .discovery import discover
+from .dumper import dump
 from .loader import load
 from .models.collection import BaseCollection, Collection, ManifestReference
 from .models.dataset import Dataset
@@ -22,5 +23,6 @@ __all__ = [
     "S3Storage",
     "Table",
     "discover",
+    "dump",
     "load",
 ]

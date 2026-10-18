@@ -26,6 +26,39 @@ It recursively loads collection pointers relative to their declaring files,
 rejects circular references, and permits shared manifests across branches.
 Pass backend connection settings using `storage_options`.
 
+Write manifest declarations with `dump()`:
+
+```python
+from fhrs.manifest import dump
+
+dump(dataset)  # ./manifest.yaml, with all collections inline
+dump(dataset, destination=".fhrs", format="json")  # .fhrs/manifest.json
+dump(
+    dataset,
+    destination=".fhrs",
+    layout={
+        f"waves/{year}": f"waves/{year}.yaml"
+        for year in dataset.collections["waves"].collections
+    },
+)
+```
+
+`destination` is a local or fsspec directory; remote connection settings use
+`storage_options`. `layout` maps dataset-relative collection keys to filenames
+relative to that directory. Unselected collections remain inline. Selected
+collections are replaced with references relative to their containing file,
+including when both a collection and its descendants are split out. Linked
+filenames must stay inside the destination and use the selected YAML or JSON
+format. Unknown collection keys and conflicting filenames fail before writing.
+
+Pass a manifest `Dataset`, or `dataset.manifest` for a runtime dataset. Resolve
+manifest references with `load()` before dumping. The dumper overwrites target
+files and leaves the input unchanged. It serializes declarations only: resource
+files are not copied, resource/storage paths are not rebased, and original YAML
+comments and formatting are not preserved. When dumping elsewhere, review relative
+storage paths. Load a root `manifest.yaml` by its file path unless its directory
+is named `fhrs` or `.fhrs`, which supports directory discovery.
+
 To construct runtime objects with dataset and parent links:
 
 ```python
