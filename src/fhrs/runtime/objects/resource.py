@@ -96,6 +96,11 @@ class Resource(BaseRuntime):
         return self.manifest.size
 
     @property
+    def suffix(self) -> str | None:
+        """Preferred file extension, including its leading dot, if declared."""
+        return self.manifest.suffix
+
+    @property
     def checksums(self) -> Checksums | None:
         return self.manifest.checksums
 

@@ -26,6 +26,11 @@ class Resource(BaseModel, extra="forbid"):
     type: Literal["file", "directory"] = "file"
     locations: list[Location] = Field(default_factory=list)
     size: int | None = Field(default=None, ge=0, strict=True)
+    suffix: str | None = Field(
+        default=None,
+        pattern=r"\A\.[\w-]+(?:\.[\w-]+)*\z",
+        description="Preferred file extension, including the leading dot (e.g. .tar.gz).",
+    )
     checksums: Checksums | None = None
     members: dict[
         Annotated[str, Field(min_length=1)], Annotated[str, Field(min_length=1)]
@@ -39,6 +44,8 @@ class Resource(BaseModel, extra="forbid"):
             raise ValueError("File size must be a nonnegative integer in bytes")
         if self.type == "directory" and self.size is not None:
             raise ValueError("Directory resources cannot declare file size")
+        if self.type == "directory" and self.suffix is not None:
+            raise ValueError("Directory resources cannot declare a file suffix")
         if self.type == "directory" and self.checksums is not None:
             raise ValueError("Directory resources cannot declare file checksums")
         locations = [

@@ -15,6 +15,46 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 class ResourceLocationTests(unittest.TestCase):
+    def test_file_suffix_is_optional_and_exposed_without_changing_sources(self):
+        for suffix in (None, ".pdf", ".tar.gz"):
+            with self.subTest(suffix=suffix):
+                declaration = ResourceManifest(
+                    suffix=suffix,
+                    locations=[{"uri": "https://example.org/download?id=1"}],
+                )
+                dataset = runtime.Dataset(
+                    DatasetManifest(name="survey", resources={"report": declaration})
+                )
+                resource = dataset.resource("report")
+                self.assertEqual(resource.suffix, suffix)
+                self.assertEqual(declaration.model_dump()["suffix"], suffix)
+                self.assertEqual(
+                    resource.key + (resource.suffix or ""), "report" + (suffix or "")
+                )
+                self.assertEqual(
+                    resource.sources[0].urlpath, "https://example.org/download?id=1"
+                )
+        self.assertIsNone(ResourceManifest().suffix)
+        self.assertIsNone(ResourceManifest(type="directory").suffix)
+
+    def test_invalid_suffixes_and_directory_suffixes_are_rejected(self):
+        for suffix in (
+            "",
+            "pdf",
+            ".",
+            "..",
+            ".tar..gz",
+            ".pdf/other",
+            ".pdf\\other",
+            ".pdf:other",
+            ".pdf\n",
+            1,
+        ):
+            with self.subTest(suffix=suffix), self.assertRaises(ValidationError):
+                ResourceManifest(suffix=suffix)
+        with self.assertRaises(ValidationError):
+            ResourceManifest(type="directory", suffix=".csv")
+
     def test_location_original_defaults_to_false_and_requires_a_boolean(self):
         for fields, expected in (
             ({}, False),

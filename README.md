@@ -260,6 +260,13 @@ Resources may omit `locations` or declare an empty list when only metadata is
 available. They bind with no sources; reading a file or listing a member without
 a source raises `ValueError`. Looking up an unknown named source raises `KeyError`.
 
+File resources may also declare `suffix`, available as `resource.suffix`
+(`None` if omitted). Include the leading dot, for example `.pdf` or `.tar.gz`.
+Each dot-separated component contains letters, digits, underscores or hyphens;
+paths and separators are rejected. Directories cannot declare a file suffix.
+Use `resource.key + (resource.suffix or "")` to form a dataset-relative file
+path. This declaration does not change source URLs or infer an extension from them.
+
 Embedded storage describes data shipped with the code itself.
 An unqualified resource path resolves beside the dataset manifest, including
 resources in child collections. Named `embedded` storage resolves its base
