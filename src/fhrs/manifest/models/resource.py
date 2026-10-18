@@ -21,10 +21,10 @@ class Checksums(BaseModel, extra="forbid"):
 
 
 class Resource(BaseModel, extra="forbid"):
-    """A file or directory with one or more ordered mirror locations."""
+    """A file or directory with optional ordered mirror locations."""
 
     type: Literal["file", "directory"] = "file"
-    locations: list[Location] = Field(min_length=1)
+    locations: list[Location] = Field(default_factory=list)
     size: int | None = Field(default=None, ge=0, strict=True)
     checksums: Checksums | None = None
     members: dict[

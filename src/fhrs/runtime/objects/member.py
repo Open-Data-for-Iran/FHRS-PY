@@ -73,5 +73,7 @@ class ResourceMember(BaseRuntime):
         Matches are refreshed on every call; no matches returns an empty tuple.
         Filesystem errors propagate without falling back to another mirror.
         """
+        if source is None and not self.sources:
+            raise ValueError(f"Resource {self.resource.key!r} has no locations")
         selected = self.sources[0] if source is None else self.source(source)
         return selected.glob()

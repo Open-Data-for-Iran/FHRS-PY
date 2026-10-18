@@ -69,6 +69,25 @@ class CSVReaderChecks:
         self.assertEqual(self.ids(self.read(resource)), [1])
         self.assertEqual(self.ids(self.read(resource, source="backup")), [3])
 
+    def test_rejects_reading_resources_without_locations(self):
+        dataset = runtime.Dataset(
+            DatasetManifest.model_validate(
+                {
+                    "name": "survey",
+                    "resources": {
+                        "file": {},
+                        "directory": {"type": "directory", "locations": []},
+                    },
+                }
+            )
+        )
+        for key in ("file", "directory#member:*.csv"):
+            with (
+                self.subTest(key=key),
+                self.assertRaisesRegex(ValueError, "no locations"),
+            ):
+                self.read(dataset.resource(key))
+
     def test_table_load_uses_registry_and_preserves_reference_order(self):
         READERS["test_csv"] = CSVReader()
         self.addCleanup(READERS.pop, "test_csv")

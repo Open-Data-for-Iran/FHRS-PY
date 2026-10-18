@@ -10,6 +10,27 @@ from fhrs.manifest import Dataset as DatasetManifest
 
 
 class ResourceMemberTests(unittest.TestCase):
+    def test_members_without_locations_bind_but_cannot_list_files(self):
+        dataset = runtime.Dataset(
+            DatasetManifest.model_validate(
+                {
+                    "name": "survey",
+                    "resources": {
+                        "directory": {
+                            "type": "directory",
+                            "members": {"rows": "*.csv"},
+                        }
+                    },
+                }
+            )
+        )
+        member = dataset.resource("directory#rows")
+        self.assertEqual(member.sources, ())
+        with self.assertRaisesRegex(ValueError, "no locations"):
+            member.files()
+        with self.assertRaises(KeyError):
+            member.files(source="missing")
+
     def make_resource(self, uri="memory://member-data", pattern="[UR]*.csv"):
         manifest = DatasetManifest.model_validate(
             {

@@ -256,6 +256,10 @@ complete file size in bytes, available as `resource.size` (`None` if omitted).
 It applies to every mirror and is forbidden for directories. Different sizes
 prove different contents; equal sizes still require a checksum comparison.
 
+Resources may omit `locations` or declare an empty list when only metadata is
+available. They bind with no sources; reading a file or listing a member without
+a source raises `ValueError`. Looking up an unknown named source raises `KeyError`.
+
 Embedded storage describes data shipped with the code itself.
 An unqualified resource path resolves beside the dataset manifest, including
 resources in child collections. Named `embedded` storage resolves its base
