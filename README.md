@@ -189,6 +189,10 @@ Resource lookup supports the same collection paths, followed by an optional
 member selector, such as `dataset.resource("waves/1403/raw_csv#household_size")`
 or `dataset.resource("waves/1403/raw_csv#member:nested/*.csv")`. Slashes after
 `#` belong to the member selector and are not traversed as collections.
+Each resource exposes `key`, its dataset-relative lookup path, such as
+`waves/1403/raw_csv`. It uses collection and resource mapping keys, independently
+of storage locations and manifest display names. Root resource keys contain
+only the resource name; `dataset.resource(resource.key)` returns that resource.
 Missing path components raise `KeyError`; traversing an unresolved manifest
 reference raises `TypeError` (use `runtime.load()` to resolve manifests first).
 

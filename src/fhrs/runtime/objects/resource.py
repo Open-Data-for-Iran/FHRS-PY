@@ -70,6 +70,19 @@ class Resource(BaseRuntime):
         return self.members[name]
 
     @property
+    def key(self) -> str:
+        """Resource lookup path relative to its dataset, independent of locations."""
+        from .collection import Collection
+
+        parts = [self.name]
+        node = self.parent
+        while node is not self.dataset:
+            assert isinstance(node, Collection)
+            parts.append(node.name)
+            node = node.parent
+        return "/".join(reversed(parts))
+
+    @property
     def type(self) -> Literal["file", "directory"]:
         return self.manifest.type
 

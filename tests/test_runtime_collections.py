@@ -10,6 +10,33 @@ from fhrs.manifest import ManifestReference
 
 
 class RuntimeCollectionTests(unittest.TestCase):
+    def test_resource_key_is_its_dataset_relative_lookup_path(self):
+        resource = {"locations": [{"uri": "https://example.org/download?id=1"}]}
+        dataset = runtime.Dataset(
+            DatasetManifest.model_validate(
+                {
+                    "name": "survey",
+                    "resources": {"report": resource},
+                    "collections": {
+                        "waves": {
+                            "name": "Annual waves",
+                            "collections": {
+                                "1403": {
+                                    "name": "Report 1403",
+                                    "resources": {"report": resource},
+                                }
+                            },
+                        }
+                    },
+                }
+            )
+        )
+        for key in ("report", "waves/1403/report"):
+            with self.subTest(key=key):
+                item = dataset.resource(key)
+                self.assertEqual(item.key, key)
+                self.assertIs(dataset.resource(item.key), item)
+
     def test_resource_lookup_traverses_paths_before_resolving_members(self):
         manifest = DatasetManifest.model_validate(
             {
