@@ -1,7 +1,7 @@
 # FHRS Python
 
 Load and validate FHRS dataset manifests from local files or fsspec URLs.
-Requires Python 3.14 or newer.
+Requires Python 3.13 or newer.
 
 ```sh
 uv sync

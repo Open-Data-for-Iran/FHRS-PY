@@ -1,5 +1,7 @@
 """Runtime addresses of datasets, collection manifests, and resource contents."""
 
+from __future__ import annotations
+
 import posixpath
 from dataclasses import dataclass, field
 from io import TextIOWrapper
