@@ -80,8 +80,6 @@ class RuntimeCollectionTests(unittest.TestCase):
         ):
             with self.subTest(path=path), self.assertRaises(KeyError):
                 dataset.resource(path)
-        with self.assertRaisesRegex(TypeError, "unresolved"):
-            self.make_dataset().resource("external/data")
 
     def test_table_lookup_traverses_collection_paths(self):
         dataset = self.make_dataset()
@@ -100,8 +98,6 @@ class RuntimeCollectionTests(unittest.TestCase):
         ):
             with self.subTest(path=path), self.assertRaises(KeyError):
                 dataset.table(path)
-        with self.assertRaisesRegex(TypeError, "unresolved"):
-            dataset.table("external/rows")
 
     def test_tables_bind_resources_and_members_in_order_with_owner_context(self):
         contents = {
@@ -244,7 +240,6 @@ class RuntimeCollectionTests(unittest.TestCase):
                         **contents,
                         "collections": {"nested": contents},
                     },
-                    "external": {"manifest": "other/manifest.yaml"},
                 },
             }
         )
@@ -276,12 +271,8 @@ class RuntimeCollectionTests(unittest.TestCase):
         self.assertIsNot(wave.resource("data"), dataset.resource("data"))
         self.assertIs(dataset.storage("archive").dataset, dataset)
 
-    def test_reference_and_read_only_snapshot(self):
+    def test_read_only_snapshot(self):
         dataset = self.make_dataset()
-        self.assertIsInstance(dataset.collection("external"), ManifestReference)
-        self.assertIs(
-            dataset.collection("external"), dataset.manifest.collections["external"]
-        )
         wave = dataset.collection("wave")
         for node in (dataset, wave):
             for mapping in (node.resources, node.tables, node.collections):
@@ -292,6 +283,34 @@ class RuntimeCollectionTests(unittest.TestCase):
                     lookup("missing")
         dataset.manifest.resources["later"] = dataset.manifest.resources["data"]
         self.assertNotIn("later", dataset.resources)
+
+    def test_runtime_datasets_reject_unresolved_collection_references(self):
+        external = {"external": {"manifest": "other/manifest.yaml"}}
+        for constructor in (runtime.Dataset,):
+            for collections in (external, {"wave": {"collections": external}}):
+                manifest = DatasetManifest.model_validate(
+                    {"name": "survey", "collections": collections}
+                )
+                with (
+                    self.subTest(constructor=constructor, collections=collections),
+                    self.assertRaisesRegex(TypeError, "external.*fhrs.load"),
+                ):
+                    constructor(manifest)
+
+    def test_attached_collections_reject_unresolved_references(self):
+        for dataset_type, collection_type in ((runtime.Dataset, runtime.Collection),):
+            manifest = CollectionManifest(
+                collections={"external": ManifestReference(manifest="other.yaml")}
+            )
+            with (
+                self.subTest(collection=collection_type),
+                self.assertRaisesRegex(TypeError, "external.*fhrs.load"),
+            ):
+                collection_type(
+                    manifest,
+                    name="attached",
+                    parent=dataset_type(DatasetManifest(name="survey")),
+                )
 
     def test_attached_collection_constructor(self):
         dataset = self.make_dataset()
@@ -306,31 +325,6 @@ class RuntimeCollectionTests(unittest.TestCase):
         self.assertEqual(collection.resources, {})
         self.assertEqual(collection.tables, {})
         self.assertEqual(collection.collections, {})
-
-    def test_owners_are_required(self):
-        dataset = self.make_dataset()
-        for constructor, manifest, missing_owners in (
-            (
-                runtime.Collection,
-                CollectionManifest(),
-                ({}, {"dataset": dataset}),
-            ),
-            (
-                runtime.Resource,
-                dataset.manifest.resources["data"],
-                ({}, {"dataset": dataset}),
-            ),
-        ):
-            for owners in missing_owners:
-                with (
-                    self.subTest(constructor=constructor, owners=list(owners)),
-                    self.assertRaises(TypeError),
-                ):
-                    constructor(manifest, name="unbound", **owners)
-
-        table_manifest = dataset.manifest.tables["rows"]
-        with self.assertRaises(TypeError):
-            runtime.Table(table_manifest, name="unbound")
 
     def test_collection_constructor_derives_dataset_from_parent(self):
         plain = self.make_dataset()
@@ -400,6 +394,31 @@ class RuntimeCollectionTests(unittest.TestCase):
                         name="missing",
                         parent=parent,
                     )
+
+    def test_owners_are_required(self):
+        dataset = self.make_dataset()
+        for constructor, manifest, missing_owners in (
+            (
+                runtime.Collection,
+                CollectionManifest(),
+                ({}, {"dataset": dataset}),
+            ),
+            (
+                runtime.Resource,
+                dataset.manifest.resources["data"],
+                ({}, {"dataset": dataset}),
+            ),
+        ):
+            for owners in missing_owners:
+                with (
+                    self.subTest(constructor=constructor, owners=list(owners)),
+                    self.assertRaises(TypeError),
+                ):
+                    constructor(manifest, name="unbound", **owners)
+
+        table_manifest = dataset.manifest.tables["rows"]
+        with self.assertRaises(TypeError):
+            runtime.Table(table_manifest, name="unbound")
 
 
 if __name__ == "__main__":

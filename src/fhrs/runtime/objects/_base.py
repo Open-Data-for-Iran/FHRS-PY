@@ -9,7 +9,6 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from ...manifest.models.collection import Collection as CollectionManifest
-from ...manifest.models.collection import ManifestReference
 from ...manifest.models.dataset import Dataset as DatasetManifest
 
 if TYPE_CHECKING:
@@ -41,9 +40,7 @@ class BaseCollection(BaseRuntime, ABC):
     manifest: CollectionManifest | DatasetManifest
     resources: Mapping[str, Resource] = field(init=False, repr=False)
     tables: Mapping[str, Table] = field(init=False, repr=False)
-    collections: Mapping[str, Collection | ManifestReference] = field(
-        init=False, repr=False
-    )
+    collections: Mapping[str, Collection] = field(init=False, repr=False)
 
     def _bind_contents(
         self,
@@ -68,15 +65,16 @@ class BaseCollection(BaseRuntime, ABC):
                 for name, manifest in self.manifest.tables.items()
             },
         )
-        self._set_mapping(
-            "collections",
-            {
-                name: manifest
-                if isinstance(manifest, ManifestReference)
-                else Collection(manifest, name=name, parent=self)
-                for name, manifest in self.manifest.collections.items()
-            },
-        )
+        collections = {}
+        for name, manifest in self.manifest.collections.items():
+            if not isinstance(manifest, CollectionManifest):
+                raise TypeError(
+                    f"Collection {name!r} references unresolved manifest "
+                    f"{manifest.manifest!r}; use fhrs.load() or fhrs.manifest.load() "
+                    "to resolve references before constructing runtime objects"
+                )
+            collections[name] = Collection(manifest, name=name, parent=self)
+        self._set_mapping("collections", collections)
 
     @property
     def title(self) -> str | None:
@@ -103,11 +101,8 @@ class BaseCollection(BaseRuntime, ABC):
         parts = path.split("/")
         node = self
         for part in parts[:-1]:
-            child = node.collection(part)
-            if isinstance(child, ManifestReference):
-                raise TypeError(f"Cannot traverse unresolved collection {part!r}")
-            node = child
+            node = node.collection(part)
         return node, parts[-1]
 
-    def collection(self, name: str) -> Collection | ManifestReference:
+    def collection(self, name: str) -> Collection:
         return self.collections[name]

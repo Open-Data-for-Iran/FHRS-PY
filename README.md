@@ -291,8 +291,12 @@ Each resource exposes `key`, its dataset-relative lookup path, such as
 `waves/1403/raw_csv`. It uses collection and resource mapping keys, independently
 of storage locations and manifest display names. Root resource keys contain
 only the resource name; `dataset.resource(resource.key)` returns that resource.
-Missing path components raise `KeyError`; traversing an unresolved manifest
-reference raises `TypeError` (use `runtime.load_manifest()` to resolve manifests first).
+Missing path components raise `KeyError`. Runtime collections always contain
+runtime `Collection` objects. Direct runtime construction rejects unresolved
+manifest references with `TypeError`, including references in nested collections.
+Use `fhrs.load()` or `runtime.load_manifest()` to load and resolve references
+before runtime binding, or pass declarations from `fhrs.manifest.load()` to a
+runtime constructor.
 
 Table references are read in declared order and concatenated using the chosen
 backend. Source selection and reader options are forwarded to each reference.
