@@ -426,6 +426,25 @@ to `"0.1"`; internal collections omit it. Named embedded,
 HTTP(S), and S3 storage declarations map their options to fsspec; install the
 `s3` extra to use the S3 backend.
 
+Datasets also accept optional `schema_version` and `release` fields, exposed
+on runtime datasets under the same names:
+
+```python
+declaration = fhrs.manifest.Dataset(
+    name="survey", schema_version="2", release="2026-10-20.1"
+)
+dataset = fhrs.runtime.Dataset(declaration)
+dataset.schema_version  # "2"
+dataset.release         # "2026-10-20.1"
+```
+
+Both are nonblank strings when provided and default to `None`. `schema_version`
+identifies the data contract; `release` identifies the published data snapshot.
+They are preserved when manifests are dumped and reloaded. They are independent
+of `fhrs_version`; neither changes the Python package version. These fields only
+describe the loaded dataset: loaders do not yet select releases or match schema
+compatibility. Collections do not inherit these dataset fields.
+
 See [the examples](examples/README.md) for layouts, storage declarations, and
 manifest pointers.
 

@@ -62,6 +62,16 @@ class Dataset(BaseCollection):
     def name(self) -> str:
         return self.manifest.name
 
+    @property
+    def schema_version(self) -> str | None:
+        """The declared data schema version, if supplied."""
+        return self.manifest.schema_version
+
+    @property
+    def release(self) -> str | None:
+        """The declared data release identifier, if supplied."""
+        return self.manifest.release
+
     def storage(self, name: str) -> Storage:
         return self.storages[name]
 

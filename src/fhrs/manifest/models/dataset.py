@@ -24,6 +24,8 @@ class Dataset(BaseCollection):
 
     name: Name
     fhrs_version: Literal["0.1"] = "0.1"
+    schema_version: str | None = Field(default=None, min_length=1, pattern=r"\S")
+    release: str | None = Field(default=None, min_length=1, pattern=r"\S")
     dump_options: DumpOptions = Field(default_factory=DumpOptions, exclude=True)
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)
