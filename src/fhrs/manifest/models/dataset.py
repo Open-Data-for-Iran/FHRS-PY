@@ -1,7 +1,7 @@
 """Dataset roots."""
 
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -22,8 +22,22 @@ class DumpOptions(BaseModel, extra="forbid"):
 class Dataset(BaseCollection):
     """A named dataset containing resources, tables, and collections."""
 
-    name: Name
+    # Explicit dump order places identity before inherited collection contents.
+    _dump_field_order: ClassVar[tuple[str, ...]] = (
+        "fhrs_version",
+        "name",
+        "title",
+        "description",
+        "schema_version",
+        "release",
+        "storages",
+        "resources",
+        "tables",
+        "collections",
+    )
+
     fhrs_version: Literal["0.1"] = "0.1"
+    name: Name
     schema_version: str | None = Field(default=None, min_length=1, pattern=r"\S")
     release: str | None = Field(default=None, min_length=1, pattern=r"\S")
     dump_options: DumpOptions = Field(default_factory=DumpOptions, exclude=True)

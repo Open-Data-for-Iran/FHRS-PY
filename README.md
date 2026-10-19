@@ -135,6 +135,13 @@ including when both a collection and its descendants are split out. Linked
 filenames must stay inside the destination and use the selected YAML or JSON
 format. Unknown collection keys and conflicting filenames fail before writing.
 
+YAML and JSON dumps use the field order defined by the FHRS manifest models,
+including nested objects and linked collections. The order of named entries in
+resource, table, storage, and collection mappings is preserved.
+Dataset roots use this explicit order: `fhrs_version`, `name`, `title`,
+`description`, `schema_version`, `release`, `storages`, `resources`, `tables`,
+`collections`. Optional fields whose value is `None` are omitted.
+
 Pass a manifest `Dataset`, or `dataset.manifest` for a runtime dataset. Resolve
 manifest references with `load()` before dumping. The dumper overwrites target
 files and leaves the input unchanged. It serializes declarations only: resource

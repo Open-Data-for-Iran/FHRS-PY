@@ -32,6 +32,8 @@ def dump(
     Existing files are overwritten; resource contents and paths are unchanged.
     Omitted or None arguments use dataset.dump_options; empty mappings override
     stored layout or storage options. Dump options are never serialized.
+    Dataset fields follow Dataset's explicit dump order, beginning with
+    fhrs_version. Other declarations follow model field order.
     """
     if not isinstance(dataset, Dataset):
         raise TypeError(
@@ -118,7 +120,10 @@ def _build_documents(
                     )
                 }
         data["collections"] = children
-        return data
+        field_order = type(node).model_fields
+        if isinstance(node, Dataset):
+            field_order = (*node._dump_field_order, *field_order)
+        return {name: data[name] for name in field_order if name in data}
 
     documents[files[""]] = render(dataset, "", files[""])
     unknown = files.keys() - visited

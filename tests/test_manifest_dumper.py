@@ -47,6 +47,134 @@ class ManifestWriterTests(unittest.TestCase):
     def read(self, path):
         return YAML(typ="safe").load((self.root / path).read_text(encoding="utf-8"))
 
+    def test_dump_uses_model_field_order_including_nested_fields(self):
+        dataset = manifest.Dataset(
+            name="survey",
+            collections={"z": {"name": "wave", "title": "Wave"}, "a": {}},
+            resources={
+                "z": manifest.Resource(
+                    suffix=".csv",
+                    locations=[manifest.Location(name="web", uri="data.csv")],
+                    type="file",
+                ),
+                "a": {},
+            },
+            tables={"data": {"title": "Data", "reader": "csv", "resource": "z"}},
+            storages={"web": {"url": "https://example.org/", "type": "http"}},
+            title="Survey",
+            release="1405-07-28",
+            description="Dataset description",
+            schema_version="0.1.0",
+        )
+        for format in ("yaml", "json"):
+            with self.subTest(format=format):
+                manifest.dump(dataset, self.root, format=format)
+                data = self.read(f"manifest.{format}")
+                self.assertEqual(
+                    list(data),
+                    [
+                        "fhrs_version",
+                        "name",
+                        "title",
+                        "description",
+                        "schema_version",
+                        "release",
+                        "storages",
+                        "resources",
+                        "tables",
+                        "collections",
+                    ],
+                )
+                self.assertEqual(list(data["collections"]), ["z", "a"])
+                self.assertEqual(
+                    list(data["collections"]["z"]),
+                    ["title", "resources", "tables", "collections", "name"],
+                )
+                self.assertEqual(list(data["resources"]), ["z", "a"])
+                resource = data["resources"]["z"]
+                self.assertEqual(list(resource), ["type", "locations", "suffix"])
+                self.assertEqual(
+                    list(resource["locations"][0]), ["uri", "name", "original"]
+                )
+                self.assertEqual(
+                    list(data["tables"]["data"]), ["resource", "reader", "title"]
+                )
+                self.assertEqual(
+                    list(data["storages"]["web"]),
+                    ["protocol", "original", "storage_options", "type", "url"],
+                )
+
+    def test_loaded_manifest_uses_model_order_in_linked_and_flat_dumps(self):
+        source = self.root / "source.yaml"
+        source.write_text(
+            "release: '1'\ncollections:\n  wave:\n    name: wave\n"
+            "    collections: {}\n    title: Wave\nname: survey\ntitle: Survey\n",
+            encoding="utf-8",
+        )
+        dataset = manifest.load(source)
+        for format in ("yaml", "json"):
+            with self.subTest(format=format):
+                destination = self.root / format
+                manifest.dump(
+                    dataset,
+                    destination,
+                    format=format,
+                    layout={"wave": f"wave.{format}"},
+                )
+                root = self.read(f"{format}/manifest.{format}")
+                wave = self.read(f"{format}/wave.{format}")
+                self.assertEqual(
+                    list(root),
+                    [
+                        "fhrs_version",
+                        "name",
+                        "title",
+                        "release",
+                        "storages",
+                        "resources",
+                        "tables",
+                        "collections",
+                    ],
+                )
+                self.assertEqual(
+                    list(wave), ["title", "resources", "tables", "collections", "name"]
+                )
+                manifest.dump(
+                    manifest.load(destination / f"manifest.{format}"),
+                    destination / "flat",
+                    format=format,
+                )
+                flat = self.read(f"{format}/flat/manifest.{format}")
+                self.assertEqual(
+                    list(flat),
+                    [
+                        "fhrs_version",
+                        "name",
+                        "title",
+                        "release",
+                        "storages",
+                        "resources",
+                        "tables",
+                        "collections",
+                    ],
+                )
+                self.assertEqual(
+                    list(flat["collections"]["wave"]),
+                    ["title", "resources", "tables", "collections", "name"],
+                )
+
+    def test_storage_alias_uses_canonical_model_field_order(self):
+        dataset = manifest.Dataset(
+            name="survey",
+            storages={"web": {"base_url": "https://example.org/", "type": "http"}},
+        )
+        manifest.dump(dataset.model_copy(deep=True), self.root)
+        storage = self.read("manifest.yaml")["storages"]["web"]
+        self.assertEqual(
+            list(storage), ["protocol", "original", "storage_options", "type", "url"]
+        )
+        self.assertNotIn("base_url", storage)
+
     def test_members_omit_none_and_preserve_explicit_empty_directory_mapping(self):
         dataset = manifest.Dataset(
             name="survey",
