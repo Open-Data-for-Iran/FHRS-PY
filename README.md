@@ -162,7 +162,10 @@ local = working.resolve("data")
 The working directory defaults to `data/<dataset.name>` under the current
 directory. Dataset initialization replaces `<dataset.name>` with the manifest's
 name in any supplied path and resolves it to an absolute path.
-Dataset names cannot contain `/` or `\` or be exactly `.` or `..`.
+Dataset and collection names use 1–64 lowercase ASCII letters, digits,
+underscores, or hyphens. Surrounding whitespace is stripped. Uppercase input,
+dots, and Unicode names are rejected; use `title` for display text.
+Dataset names are required; collection names may be omitted or `None`.
 An explicit `working_directory` overrides this entire path; it can also be passed
 to `runtime.Dataset(..., working_directory=...)`. Local resource paths use
 `resource.key + (resource.suffix or "")` beneath that directory. Directories

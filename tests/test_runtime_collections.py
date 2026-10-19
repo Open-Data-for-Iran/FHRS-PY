@@ -19,10 +19,10 @@ class RuntimeCollectionTests(unittest.TestCase):
                     "resources": {"report": resource},
                     "collections": {
                         "waves": {
-                            "name": "Annual waves",
+                            "name": "annual_waves",
                             "collections": {
                                 "1403": {
-                                    "name": "Report 1403",
+                                    "name": "report_1403",
                                     "resources": {"report": resource},
                                 }
                             },

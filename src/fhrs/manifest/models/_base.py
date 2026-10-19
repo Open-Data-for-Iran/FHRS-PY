@@ -3,7 +3,21 @@
 import re
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
+
+Name = Annotated[
+    str,
+    Field(
+        description="Lowercase alphanumeric identifier with underscores or hyphens.",
+    ),
+    StringConstraints(
+        strip_whitespace=True,
+        to_lower=True,
+        min_length=1,
+        max_length=64,
+        pattern=r"^[a-z0-9_-]+$",
+    ),
+]
 
 RelativePath = Annotated[
     str,

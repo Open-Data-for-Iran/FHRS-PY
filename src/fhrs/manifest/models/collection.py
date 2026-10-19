@@ -6,7 +6,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
-from ._base import RelativePath
+from ._base import Name, RelativePath
 from .resource import Resource
 from .table import Table
 
@@ -22,7 +22,6 @@ class BaseCollection(BaseModel, extra="forbid"):
 
     _storage: dict[str, Any] = PrivateAttr()
 
-    name: str = Field(min_length=1)
     title: str | None = Field(default=None, min_length=1)
     description: str | None = None
     resources: dict[str, Resource] = Field(default_factory=dict)
@@ -46,7 +45,7 @@ class BaseCollection(BaseModel, extra="forbid"):
 class Collection(BaseCollection):
     """A logical group with an optional name and child collections."""
 
-    name: str | None = Field(default=None, min_length=1)
+    name: Name | None = None
 
 
 BaseCollection.model_rebuild()

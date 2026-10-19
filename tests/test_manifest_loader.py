@@ -8,11 +8,33 @@ import fsspec
 from pydantic import ValidationError
 from ruamel.yaml.constructor import DuplicateKeyError
 
-from fhrs.manifest import Collection, Dataset, load
+from fhrs.manifest import BaseCollection, Collection, Dataset, load
 from fhrs.manifest.loader import _load_internal_collection, _resolve_collection
 
 
 class ManifestLoaderTests(unittest.TestCase):
+    def test_dataset_requires_a_nonempty_name(self):
+        for fields in ({}, {"name": None}, {"name": ""}):
+            with self.subTest(fields=fields):
+                with self.assertRaises(ValidationError):
+                    Dataset.model_validate(fields)
+                with self.assertRaises(ValidationError):
+                    load(self.write("invalid-name.json", json.dumps(fields)))
+        self.assertIn("name", Dataset.model_json_schema()["required"])
+
+    def test_base_collection_has_no_name_field(self):
+        self.assertNotIn("name", BaseCollection.model_json_schema()["properties"])
+        with self.assertRaises(ValidationError):
+            BaseCollection(name="wave")
+
+    def test_internal_collection_name_is_optional(self):
+        self.assertIsNone(Collection().name)
+        self.assertIsNone(Collection(name=None).name)
+        self.assertEqual(Collection(name="wave").name, "wave")
+        self.assertNotIn("name", Collection.model_json_schema().get("required", []))
+        with self.assertRaises(ValidationError):
+            Collection(name="")
+
     def test_dataset_names_reject_path_components(self):
         for name in ("survey/2026", "survey\\2026", "/survey", "\\survey", ".", ".."):
             with self.subTest(name=name):
@@ -21,10 +43,30 @@ class ManifestLoaderTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     load(self.write("invalid-name.json", json.dumps({"name": name})))
 
-    def test_dataset_names_preserve_ordinary_dots_and_unicode(self):
-        for name in ("survey.v2", "survey-2026", "survey_2026", "گزارش"):
-            with self.subTest(name=name):
-                self.assertEqual(Dataset(name=name).name, name)
+    def test_dataset_and_collection_names_share_identifier_constraints(self):
+        for model in (Dataset, Collection):
+            for name in ("survey-2026", "survey_2026", "1403", "a" * 64):
+                with self.subTest(model=model, name=name):
+                    self.assertEqual(model(name=name).name, name)
+                    self.assertEqual(model(name=f"  {name}  ").name, name)
+            for name in (
+                "",
+                "   ",
+                "a" * 65,
+                "survey.v2",
+                "Annual waves",
+                "SURVEY",
+                "گزارش",
+                "survey/2026",
+                "survey\\2026",
+                ".",
+                "..",
+            ):
+                with (
+                    self.subTest(model=model, name=name),
+                    self.assertRaises(ValidationError),
+                ):
+                    model(name=name)
 
     def load_collection(self, urlpath, *, storage_options=None):
         collection = _load_internal_collection(
