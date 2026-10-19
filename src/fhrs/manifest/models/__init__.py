@@ -1,7 +1,7 @@
 """Manifest declarations and loading."""
 
 from .collection import BaseCollection, Collection, ManifestReference
-from .dataset import Dataset
+from .dataset import Dataset, DumpOptions
 from .resource import Checksums, Location, Resource
 from .storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
 from .table import Table
@@ -12,6 +12,7 @@ __all__ = [
     "Checksums",
     "Collection",
     "Dataset",
+    "DumpOptions",
     "EmbeddedStorage",
     "HTTPStorage",
     "Location",

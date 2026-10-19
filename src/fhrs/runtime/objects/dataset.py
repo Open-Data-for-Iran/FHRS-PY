@@ -1,9 +1,12 @@
 """Dataset context and its named runtime storages."""
 
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
+from typing import Any, Literal
 
+from ...manifest import dump as dump_manifest
 from ...manifest.models.dataset import Dataset as DatasetManifest
 from ._base import BaseCollection
 from .source import Source
@@ -38,3 +41,23 @@ class Dataset(BaseCollection):
 
     def storage(self, name: str) -> Storage:
         return self.storages[name]
+
+    def dump(
+        self,
+        destination: str | os.PathLike[str] | None = None,
+        *,
+        format: Literal["yaml", "json"] | None = None,
+        layout: Mapping[str, str] | None = None,
+        storage_options: dict[str, Any] | None = None,
+    ) -> None:
+        """Write this dataset's manifest using :func:`fhrs.manifest.dump`.
+
+        Only declarations are written; resource contents and paths are unchanged.
+        """
+        dump_manifest(
+            self.manifest,
+            destination,
+            format=format,
+            layout=layout,
+            storage_options=storage_options,
+        )

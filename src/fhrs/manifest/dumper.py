@@ -16,9 +16,9 @@ from .models.dataset import Dataset
 
 def dump(
     dataset: Dataset,
-    destination: str | os.PathLike[str] = ".",
+    destination: str | os.PathLike[str] | None = None,
     *,
-    format: Literal["yaml", "json"] = "yaml",
+    format: Literal["yaml", "json"] | None = None,
     layout: Mapping[str, str] | None = None,
     storage_options: dict[str, Any] | None = None,
 ) -> None:
@@ -30,11 +30,20 @@ def dump(
 
     Linked filenames must stay inside the destination and match the format.
     Existing files are overwritten; resource contents and paths are unchanged.
+    Omitted or None arguments use dataset.dump_options; empty mappings override
+    stored layout or storage options. Dump options are never serialized.
     """
     if not isinstance(dataset, Dataset):
         raise TypeError(
             "dump() requires a manifest Dataset; use runtime_dataset.manifest"
         )
+    options = dataset.dump_options
+    destination = options.destination if destination is None else destination
+    format = options.format if format is None else format
+    layout = options.layout if layout is None else layout
+    storage_options = (
+        options.storage_options if storage_options is None else storage_options
+    )
     if format not in ("yaml", "json"):
         raise ValueError(f"Unsupported manifest format: {format}")
     if not os.fspath(destination):

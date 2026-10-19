@@ -59,6 +59,23 @@ comments and formatting are not preserved. When dumping elsewhere, review relati
 storage paths. Load a root `manifest.yaml` by its file path unless its directory
 is named `fhrs` or `.fhrs`, which supports directory discovery.
 
+A dataset manifest can carry defaults for dumping:
+
+```yaml
+dump_options:
+  destination: .fhrs
+  format: yaml
+  layout:
+    waves/1403: waves/1403.yaml
+```
+
+These options are accepted when loading or constructing a manifest but excluded
+from serialization, including `model_dump()` and written manifests. Both
+`manifest.dump(dataset)` and runtime `dataset.dump()` use them. Explicit non-`None`
+arguments override the stored defaults; pass `layout={}` for flat output or
+`storage_options={}` to clear stored connection settings. Without stored options,
+dumping still defaults to flat YAML in the current directory.
+
 To construct runtime objects with dataset and parent links:
 
 ```python
@@ -68,6 +85,17 @@ dataset = runtime.load("examples/manifest-pointers")
 wave = dataset.collection("waves").collection("1403")
 print(wave.title)
 ```
+
+Runtime datasets expose the same manifest dumper through `dataset.dump()`:
+
+```python
+dataset.dump()  # ./manifest.yaml
+dataset.dump(".fhrs", format="json")
+dataset.dump(".fhrs", layout={"waves/1403": "waves/1403.yaml"})
+```
+
+The method accepts the same `destination`, `format`, `layout`, and
+`storage_options` arguments as `fhrs.manifest.dump()`.
 
 Resources bind `sources` during initialization in declared location order,
 without accessing resource contents:

@@ -8,7 +8,7 @@ from uuid import uuid4
 import fsspec
 from ruamel.yaml import YAML
 
-from fhrs import manifest
+from fhrs import manifest, runtime
 
 
 class ManifestWriterTests(unittest.TestCase):
@@ -46,6 +46,100 @@ class ManifestWriterTests(unittest.TestCase):
 
     def read(self, path):
         return YAML(typ="safe").load((self.root / path).read_text(encoding="utf-8"))
+
+    def test_dump_options_loaded_as_defaults_but_not_serialized(self):
+        source = self.root / "source.yaml"
+        source.write_text(
+            "name: survey\ncollections:\n  wave:\n    title: Wave\n"
+            "dump_options:\n  format: json\n  layout:\n    wave: wave.json\n",
+            encoding="utf-8",
+        )
+        declaration = manifest.load(source)
+        self.assertNotIn("dump_options", declaration.model_dump())
+        for index, dataset in enumerate((declaration, runtime.Dataset(declaration))):
+            destination = self.root / str(index)
+            if isinstance(dataset, runtime.Dataset):
+                dataset.dump(destination)
+            else:
+                manifest.dump(dataset, destination)
+            data = json.loads(
+                (destination / "manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("dump_options", data)
+            self.assertEqual(data["collections"]["wave"], {"manifest": "wave.json"})
+            self.assertTrue((destination / "wave.json").exists())
+
+    def test_dump_options_destination_and_storage_defaults_can_be_overridden(self):
+        destination = f"/dump-options-{uuid4().hex}"
+        filesystem = fsspec.filesystem("memory")
+        filesystem.makedirs(destination)
+        self.addCleanup(filesystem.rm, destination, recursive=True)
+        dataset = manifest.Dataset(
+            name="survey",
+            dump_options={
+                "destination": destination,
+                "format": "json",
+                "layout": {"wave": "wave.json"},
+                "storage_options": {"protocol": "memory"},
+            },
+            collections={"wave": {"title": "Wave"}},
+        )
+        manifest.dump(dataset)
+        self.assertTrue(filesystem.exists(f"{destination}/manifest.json"))
+        runtime.Dataset(dataset).dump(
+            self.root, format="yaml", layout={}, storage_options={}
+        )
+        data = self.read("manifest.yaml")
+        self.assertNotIn("dump_options", data)
+        self.assertEqual(data["collections"]["wave"]["title"], "Wave")
+        self.assertEqual(dataset.dump_options.format, "json")
+
+    def test_runtime_dataset_dumps_flat_yaml_by_default(self):
+        dataset = runtime.Dataset(
+            self.dataset, source=runtime.Source(str(self.root / "source.yaml"))
+        )
+        previous = Path.cwd()
+        try:
+            os.chdir(self.root)
+            dataset.dump()
+        finally:
+            os.chdir(previous)
+        self.assertEqual(
+            manifest.load(self.root / "manifest.yaml").model_dump(),
+            self.dataset.model_dump(),
+        )
+        self.assertEqual(list(self.root.iterdir()), [self.root / "manifest.yaml"])
+
+    def test_runtime_dataset_dumps_linked_json_with_storage_options(self):
+        dataset = runtime.Dataset(
+            self.dataset, source=runtime.Source(str(self.root / "source.yaml"))
+        )
+        before = self.dataset.model_dump()
+        source = dataset.source
+        destination = f"/runtime-dump-{uuid4().hex}"
+        filesystem = fsspec.filesystem("memory")
+        filesystem.makedirs(destination)
+        self.addCleanup(filesystem.rm, destination, recursive=True)
+        dataset.dump(
+            destination,
+            format="json",
+            layout={"waves/1403": "years/latest.json"},
+            storage_options={"protocol": "memory"},
+        )
+        with filesystem.open(f"{destination}/manifest.json", "rt") as stream:
+            data = json.load(stream)
+        self.assertEqual(
+            data["collections"]["waves"]["collections"]["1403"],
+            {"manifest": "years/latest.json"},
+        )
+        self.assertEqual(
+            manifest.load(
+                f"{destination}/manifest.json", storage_options={"protocol": "memory"}
+            ).model_dump(),
+            before,
+        )
+        self.assertEqual(dataset.manifest.model_dump(), before)
+        self.assertIs(dataset.source, source)
 
     def test_default_writes_flat_yaml_in_cwd(self):
         previous = Path.cwd()
