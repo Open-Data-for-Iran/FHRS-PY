@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 from ...manifest.models.resource import Checksums, Location
 from ...manifest.models.resource import Resource as ResourceManifest
@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True)
 class Resource(BaseRuntime):
     """A named resource whose metadata comes from its validated manifest."""
+
+    _member_type: ClassVar[type[ResourceMember]] = ResourceMember
 
     manifest: ResourceManifest
     name: str
@@ -49,7 +51,7 @@ class Resource(BaseRuntime):
         self._set_mapping(
             "members",
             {
-                name: ResourceMember(name, pattern, self)
+                name: self._member_type(name, pattern, self)
                 for name, pattern in (self.manifest.members or {}).items()
             },
         )
@@ -73,7 +75,7 @@ class Resource(BaseRuntime):
         """
         if name.startswith("member:"):
             pattern = name.removeprefix("member:")
-            return ResourceMember(pattern, pattern, self)
+            return self._member_type(pattern, pattern, self)
         return self.members[name]
 
     @property

@@ -4,19 +4,29 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from ...manifest import dump as dump_manifest
 from ...manifest.models.dataset import Dataset as DatasetManifest
 from ...manifest.models.storage import BaseStorage as StorageManifest
 from ._base import BaseCollection
+from .collection import Collection
+from .resource import Resource
 from .source import Source
 from .storage import Storage, _WorkingStorage
+from .table import Table
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Dataset(BaseCollection):
     """A dataset manifest bound to its source, contents, and storages."""
+
+    # Concrete types used when binding this dataset's entire runtime graph.
+    _collection_type: ClassVar[type[Collection]] = Collection
+    _resource_type: ClassVar[type[Resource]] = Resource
+    _table_type: ClassVar[type[Table]] = Table
+    _storage_type: ClassVar[type[Storage]] = Storage
+    _working_storage_type: ClassVar[type[_WorkingStorage]] = _WorkingStorage
 
     manifest: DatasetManifest
     source: Source | None = None
@@ -37,11 +47,11 @@ class Dataset(BaseCollection):
         self._set_mapping(
             "storages",
             {
-                "working": _WorkingStorage(
+                "working": self._working_storage_type(
                     StorageManifest(protocol="file"), name="working", dataset=self
                 ),
                 **{
-                    name: Storage(manifest, name=name, dataset=self)
+                    name: self._storage_type(manifest, name=name, dataset=self)
                     for name, manifest in self.manifest.storages.items()
                 },
             },

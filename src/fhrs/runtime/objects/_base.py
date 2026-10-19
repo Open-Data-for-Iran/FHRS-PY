@@ -47,21 +47,17 @@ class BaseCollection(BaseRuntime, ABC):
         *,
         dataset: Dataset,
     ) -> None:
-        from .collection import Collection
-        from .resource import Resource
-        from .table import Table
-
         self._set_mapping(
             "resources",
             {
-                name: Resource(manifest, name=name, parent=self)
+                name: dataset._resource_type(manifest, name=name, parent=self)
                 for name, manifest in self.manifest.resources.items()
             },
         )
         self._set_mapping(
             "tables",
             {
-                name: Table(manifest, name=name, parent=self)
+                name: dataset._table_type(manifest, name=name, parent=self)
                 for name, manifest in self.manifest.tables.items()
             },
         )
@@ -73,7 +69,9 @@ class BaseCollection(BaseRuntime, ABC):
                     f"{manifest.manifest!r}; use fhrs.load() or fhrs.manifest.load() "
                     "to resolve references before constructing runtime objects"
                 )
-            collections[name] = Collection(manifest, name=name, parent=self)
+            collections[name] = dataset._collection_type(
+                manifest, name=name, parent=self
+            )
         self._set_mapping("collections", collections)
 
     @property

@@ -32,6 +32,19 @@ Errors propagate from the selected loader; loading never falls back to another
 interpretation. `storage_options=` configures manifest access and is accepted
 only for paths and URLs. `working_directory=` applies to both kinds of source.
 
+Pass `manage=True` to select managed runtime subclasses:
+
+```python
+dataset = fhrs.load("sci_dataset_list", manage=True)
+```
+
+This returns `fhrs.runtime.ManagedDataset`, with managed collections, resources,
+resource members, tables, and storages, including working storage. Each managed
+class inherits its ordinary runtime counterpart and currently adds no methods.
+Sources remain ordinary runtime addresses. Loading performs no maintenance
+actions. The default `manage=False` keeps ordinary runtime types. Both
+`fhrs.runtime.load_manifest()` and `fhrs.runtime.load_package()` accept the flag.
+
 For package names, this imports `<package_name>.fhrs_setup.dataset` from an
 installed or otherwise importable Python package and returns a runtime dataset.
 The declaration must be a `fhrs.manifest.Dataset`. Hyphens in package names are

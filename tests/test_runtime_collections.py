@@ -286,7 +286,7 @@ class RuntimeCollectionTests(unittest.TestCase):
 
     def test_runtime_datasets_reject_unresolved_collection_references(self):
         external = {"external": {"manifest": "other/manifest.yaml"}}
-        for constructor in (runtime.Dataset,):
+        for constructor in (runtime.Dataset, runtime.ManagedDataset):
             for collections in (external, {"wave": {"collections": external}}):
                 manifest = DatasetManifest.model_validate(
                     {"name": "survey", "collections": collections}
@@ -298,7 +298,10 @@ class RuntimeCollectionTests(unittest.TestCase):
                     constructor(manifest)
 
     def test_attached_collections_reject_unresolved_references(self):
-        for dataset_type, collection_type in ((runtime.Dataset, runtime.Collection),):
+        for dataset_type, collection_type in (
+            (runtime.Dataset, runtime.Collection),
+            (runtime.ManagedDataset, runtime.ManagedCollection),
+        ):
             manifest = CollectionManifest(
                 collections={"external": ManifestReference(manifest="other.yaml")}
             )
@@ -328,7 +331,8 @@ class RuntimeCollectionTests(unittest.TestCase):
 
     def test_collection_constructor_derives_dataset_from_parent(self):
         plain = self.make_dataset()
-        for dataset in (plain,):
+        managed = runtime.ManagedDataset(plain.manifest, source=plain.source)
+        for dataset in (plain, managed):
             wave = dataset.collection("wave")
             for parent in (dataset, wave, wave.collection("nested")):
                 collection_type = type(wave)
@@ -348,7 +352,8 @@ class RuntimeCollectionTests(unittest.TestCase):
 
     def test_resource_constructor_derives_dataset_from_parent(self):
         plain = self.make_dataset()
-        for dataset in (plain,):
+        managed = runtime.ManagedDataset(plain.manifest, source=plain.source)
+        for dataset in (plain, managed):
             wave = dataset.collection("wave")
             for parent in (dataset, wave, wave.collection("nested")):
                 resource_type = type(parent.resource("data"))
@@ -367,7 +372,8 @@ class RuntimeCollectionTests(unittest.TestCase):
 
     def test_table_constructor_resolves_resources_from_parent(self):
         plain = self.make_dataset()
-        for dataset in (plain,):
+        managed = runtime.ManagedDataset(plain.manifest, source=plain.source)
+        for dataset in (plain, managed):
             wave = dataset.collection("wave")
             for parent in (dataset, wave, wave.collection("nested")):
                 table_type = type(parent.table("rows"))

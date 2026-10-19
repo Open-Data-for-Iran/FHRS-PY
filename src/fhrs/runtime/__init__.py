@@ -1,6 +1,14 @@
 """Runtime objects built from validated manifest declarations."""
 
 from .loader import load_manifest, load_package
+from .managed import (
+    ManagedCollection,
+    ManagedDataset,
+    ManagedResource,
+    ManagedResourceMember,
+    ManagedStorage,
+    ManagedTable,
+)
 from .objects import (
     BaseCollection,
     BaseRuntime,
@@ -18,6 +26,12 @@ __all__ = [
     "BaseRuntime",
     "Collection",
     "Dataset",
+    "ManagedCollection",
+    "ManagedDataset",
+    "ManagedResource",
+    "ManagedResourceMember",
+    "ManagedStorage",
+    "ManagedTable",
     "Resource",
     "ResourceMember",
     "Source",
