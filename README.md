@@ -14,6 +14,49 @@ For pip, use `pip install "fhrs-py[pandas,polars]"`. The pandas extra includes
 include `pyarrow`.
 
 ```python
+import fhrs
+from pathlib import Path
+
+dataset = fhrs.load("sci_dataset_list")
+dataset = fhrs.load(Path(".fhrs"))
+dataset = fhrs.load("./.fhrs")
+dataset = fhrs.load("https://example.org/manifest.yaml")
+```
+
+`fhrs.load(source)` returns a runtime dataset from a package, manifest path, or
+URL. `PathLike` objects always select manifest loading. Strings containing `/`,
+`\`, or `:`, ending in `.yaml`, `.yml`, or `.json` (case insensitive), or equal to
+`.`, `..`, or `.fhrs` also select manifest loading. Other strings select package
+loading. Pass `Path("dataset")` to load a bare directory name unambiguously.
+Errors propagate from the selected loader; loading never falls back to another
+interpretation. `storage_options=` configures manifest access and is accepted
+only for paths and URLs. `working_directory=` applies to both kinds of source.
+
+For package names, this imports `<package_name>.fhrs_setup.dataset` from an
+installed or otherwise importable Python package and returns a runtime dataset.
+The declaration must be a `fhrs.manifest.Dataset`. Hyphens in package names are
+accepted as underscores, so `sci-dataset-list` works too. Relative resource paths,
+embedded storage, and collection manifest references resolve beside
+`fhrs_setup.py`. Loading copies the declaration, leaving the package's dataset
+object unchanged. Pass `working_directory=` to choose the local working folder.
+As with any Python import, loading executes the package's setup module.
+
+Package loading is also available as `fhrs.runtime.load_package()` (defined
+in `fhrs.runtime.loader`). Both functions accept `setup_module="fhrs_setup"` to
+choose the module relative to the package:
+
+```python
+dataset = fhrs.load("sci_dataset_list", setup_module="custom_setup")
+# Equivalent:
+dataset = fhrs.runtime.load_package(
+    "sci_dataset_list", setup_module="custom_setup"
+)
+```
+
+Use `fhrs.manifest.load()` for manifest declarations and `fhrs.runtime.load_manifest()`
+for runtime datasets loaded from manifest paths or URLs:
+
+```python
 from fhrs.manifest import load
 
 dataset = load("examples/manifest-pointers")
@@ -81,7 +124,7 @@ To construct runtime objects with dataset and parent links:
 ```python
 from fhrs import runtime
 
-dataset = runtime.load("examples/manifest-pointers")
+dataset = runtime.load_manifest("examples/manifest-pointers")
 wave = dataset.collection("waves").collection("1403")
 print(wave.title)
 ```
@@ -101,7 +144,7 @@ Resources bind `sources` during initialization in declared location order,
 without accessing resource contents:
 
 ```python
-dataset = runtime.load("examples/basic")
+dataset = runtime.load_manifest("examples/basic")
 for source in dataset.resource("data").sources:
     print(source.urlpath)
     print(source.to_fsspec())
@@ -110,7 +153,7 @@ for source in dataset.resource("data").sources:
 Every runtime resource also supports an explicitly selected `working` source:
 
 ```python
-dataset = runtime.load("examples/basic", working_directory="local-data")
+dataset = runtime.load_manifest("examples/basic", working_directory="local-data")
 local = dataset.resource("data").source("working")
 working = dataset.storage("working")  # Also available in dataset.storages.
 local = working.resolve("data")
@@ -244,7 +287,7 @@ Each resource exposes `key`, its dataset-relative lookup path, such as
 of storage locations and manifest display names. Root resource keys contain
 only the resource name; `dataset.resource(resource.key)` returns that resource.
 Missing path components raise `KeyError`; traversing an unresolved manifest
-reference raises `TypeError` (use `runtime.load()` to resolve manifests first).
+reference raises `TypeError` (use `runtime.load_manifest()` to resolve manifests first).
 
 Table references are read in declared order and concatenated using the chosen
 backend. Source selection and reader options are forwarded to each reference.

@@ -27,7 +27,7 @@ class RuntimeLoaderTests(unittest.TestCase):
         manifest_path = EXAMPLES / "basic" / "fhrs.yaml"
         for urlpath in (manifest_path, manifest_path.parent):
             with self.subTest(urlpath=urlpath):
-                dataset = runtime.load(urlpath)
+                dataset = runtime.load_manifest(urlpath)
                 self.assertIsInstance(dataset, runtime.Dataset)
                 self.assertEqual(Path(dataset.source.urlpath), manifest_path)
                 self.assertEqual(dataset.source.storage_options, {})
@@ -39,7 +39,7 @@ class RuntimeLoaderTests(unittest.TestCase):
                     )
 
     def test_resolves_manifest_pointers_into_runtime_collections(self):
-        dataset = runtime.load(EXAMPLES / "manifest-pointers")
+        dataset = runtime.load_manifest(EXAMPLES / "manifest-pointers")
         waves = dataset.collection("waves")
         wave = waves.collection("1403")
         notes = wave.collection("notes")
@@ -74,7 +74,7 @@ class RuntimeLoaderTests(unittest.TestCase):
         )
         self.addCleanup(filesystem.rm, root, recursive=True)
         options = {"protocol": "memory"}
-        dataset = runtime.load(root, storage_options=options)
+        dataset = runtime.load_manifest(root, storage_options=options)
         options.clear()
         self.assertEqual(dataset.name, "remote")
         self.assertEqual(dataset.source.urlpath, f"{root}/fhrs.yaml")

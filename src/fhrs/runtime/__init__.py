@@ -1,6 +1,6 @@
 """Runtime objects built from validated manifest declarations."""
 
-from .loader import load
+from .loader import load_manifest, load_package
 from .objects import (
     BaseCollection,
     BaseRuntime,
@@ -23,5 +23,6 @@ __all__ = [
     "Source",
     "Storage",
     "Table",
-    "load",
+    "load_manifest",
+    "load_package",
 ]

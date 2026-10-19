@@ -216,11 +216,11 @@ class ResourceLocationTests(unittest.TestCase):
         self.assertEqual(resource.sources[0].urlpath, "https://example.org/missing.csv")
 
     def test_relative_locations_use_the_dataset_manifest(self):
-        dataset = runtime.load(EXAMPLES / "basic")
+        dataset = runtime.load_manifest(EXAMPLES / "basic")
         (address,) = dataset.resource("data").sources
         with fsspec.open(**address.to_fsspec(), mode="rt") as stream:
             self.assertEqual(stream.readline().strip(), "year,value")
-        dataset = runtime.load(EXAMPLES / "manifest-pointers")
+        dataset = runtime.load_manifest(EXAMPLES / "manifest-pointers")
         notes = dataset.collection("waves").collection("1403").collection("notes")
         (address,) = notes.resource("readme").sources
         with fsspec.open(**address.to_fsspec(), mode="rb") as stream:
@@ -245,7 +245,9 @@ class ResourceLocationTests(unittest.TestCase):
         fs.pipe(f"{root}/data/report one.csv", b"stored data")
         fs.pipe(f"{root}/.fhrs/nearby.csv", b"nearby data")
         self.addCleanup(fs.rm, root, recursive=True)
-        dataset = runtime.load(f"{root}/.fhrs", storage_options={"protocol": "memory"})
+        dataset = runtime.load_manifest(
+            f"{root}/.fhrs", storage_options={"protocol": "memory"}
+        )
         locations = dataset.collection("wave").resource("data").sources
         for address, content in zip(
             locations, (b"stored data", b"nearby data"), strict=True

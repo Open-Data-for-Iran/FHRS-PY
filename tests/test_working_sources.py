@@ -81,7 +81,7 @@ class WorkingSourceTests(unittest.TestCase):
 
     def test_loader_accepts_working_directory(self):
         examples = Path(__file__).resolve().parents[1] / "examples/basic"
-        dataset = runtime.load(examples, working_directory="local-data")
+        dataset = runtime.load_manifest(examples, working_directory="local-data")
         self.assertEqual(
             Path(dataset.resource("data").source("working").path),
             Path.cwd() / "local-data/data",
@@ -89,7 +89,7 @@ class WorkingSourceTests(unittest.TestCase):
 
     def test_loader_defaults_to_dataset_data_directory(self):
         examples = Path(__file__).resolve().parents[1] / "examples/basic"
-        dataset = runtime.load(examples)
+        dataset = runtime.load_manifest(examples)
         self.assertEqual(
             Path(dataset.resource("data").source("working").path),
             Path.cwd() / "data" / dataset.name / "data",
