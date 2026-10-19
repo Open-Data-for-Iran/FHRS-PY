@@ -1,13 +1,12 @@
-"""Runtime subclasses reserved for dataset maintenance operations.
-
-These currently inherit all behavior unchanged. Sources remain shared runtime
-addresses; the dataset selects managed types for its bound objects.
-"""
+"""Runtime subclasses supporting dataset maintenance operations."""
 
 from __future__ import annotations
 
-from typing import cast
+import os
+from pathlib import Path
+from typing import BinaryIO, cast
 
+from .._utils.put import put_directory, put_file
 from .objects import Collection, Dataset, Resource, ResourceMember, Storage, Table
 from .objects.storage import _WorkingStorage
 
@@ -38,6 +37,36 @@ class ManagedResource(Resource):
     @property
     def dataset(self) -> ManagedDataset:
         return cast(ManagedDataset, super().dataset)
+
+    def put(
+        self,
+        data: str | os.PathLike[str] | bytes | BinaryIO,
+        *,
+        overwrite: bool = False,
+    ) -> Path:
+        """Place file or directory content in working storage; return its path.
+
+        Paths are opened in binary mode. Caller-owned binary streams are read
+        from their current position and left open. Existing files require
+        overwrite=True. Directory resources accept directory paths only, and
+        overwrite replaces their entire contents. Copies are staged first;
+        directory publication failures restore the original when possible.
+        Manifest declarations are never modified.
+        """
+        destination = Path(
+            self.dataset.storage("working")
+            .resolve(self.key + (self.suffix or ""))
+            .urlpath
+        )
+        if not overwrite and destination.exists():
+            raise FileExistsError(destination)
+
+        if self.resource_type == "directory":
+            if not isinstance(data, (str, os.PathLike)):
+                raise TypeError("Directory resources require a local directory path")
+            return put_directory(data, destination, overwrite=overwrite)
+
+        return put_file(data, destination, overwrite=overwrite)
 
 
 class ManagedTable(Table):

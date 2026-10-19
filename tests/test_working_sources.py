@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from pydantic import ValidationError
+
 from fhrs import manifest, runtime
 
 
@@ -108,17 +110,14 @@ class WorkingSourceTests(unittest.TestCase):
                     dataset.working_directory, Path.cwd() / "cache/survey/files"
                 )
 
-    def test_declared_working_location_keeps_precedence(self):
-        dataset = runtime.Dataset(
+    def test_declared_working_location_is_rejected(self):
+        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
             manifest.Dataset(
                 name="survey",
                 resources={
                     "data": {"locations": [{"name": "working", "uri": "memory://data"}]}
                 },
             )
-        )
-        resource = dataset.resource("data")
-        self.assertIs(resource.source("working"), resource.sources[0])
 
     def test_default_directory_rejects_dataset_names_with_path_components(self):
         for name in ("../outside", ".", "..", "/outside"):

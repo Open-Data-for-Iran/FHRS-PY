@@ -9,12 +9,37 @@ from pydantic import ValidationError
 
 from fhrs import runtime
 from fhrs.manifest import Dataset as DatasetManifest
+from fhrs.manifest import Location
 from fhrs.manifest import Resource as ResourceManifest
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 class ResourceLocationTests(unittest.TestCase):
+    def test_working_location_name_is_reserved(self):
+        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
+            Location(uri="memory://data", name="working")
+        for name in (None, "primary", "working_copy"):
+            with self.subTest(name=name):
+                self.assertEqual(Location(uri="memory://data", name=name).name, name)
+        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
+            DatasetManifest.model_validate(
+                {
+                    "name": "survey",
+                    "collections": {
+                        "wave": {
+                            "resources": {
+                                "data": {
+                                    "locations": [
+                                        {"name": "working", "uri": "memory://data"}
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                }
+            )
+
     def test_file_suffix_is_optional_and_exposed_without_changing_sources(self):
         for suffix in (None, ".pdf", ".tar.gz"):
             with self.subTest(suffix=suffix):

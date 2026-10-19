@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Location(BaseModel, extra="forbid"):
@@ -12,6 +12,15 @@ class Location(BaseModel, extra="forbid"):
     name: str | None = Field(default=None, min_length=1)
     storage: str | None = Field(default=None, min_length=1)
     original: bool = Field(default=False, strict=True)
+
+    @field_validator("name")
+    @classmethod
+    def check_name(cls, name: str | None) -> str | None:
+        if name == "working":
+            raise ValueError(
+                "Location name 'working' is reserved for runtime working storage"
+            )
+        return name
 
 
 class Checksums(BaseModel, extra="forbid"):

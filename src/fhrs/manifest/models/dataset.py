@@ -1,9 +1,9 @@
 """Dataset roots."""
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ._base import Name
 from .collection import BaseCollection
@@ -28,3 +28,12 @@ class Dataset(BaseCollection):
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)
     )
+
+    @model_validator(mode="after")
+    def check_storage_names(self) -> Self:
+        if "working" in self.storages:
+            raise ValueError(
+                "Storage name 'working' is reserved for runtime working storage; "
+                "use working_directory to configure its location"
+            )
+        return self

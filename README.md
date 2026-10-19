@@ -40,10 +40,38 @@ dataset = fhrs.load("sci_dataset_list", manage=True)
 
 This returns `fhrs.runtime.ManagedDataset`, with managed collections, resources,
 resource members, tables, and storages, including working storage. Each managed
-class inherits its ordinary runtime counterpart and currently adds no methods.
-Sources remain ordinary runtime addresses. Loading performs no maintenance
+class inherits its ordinary runtime counterpart. Sources remain ordinary
+runtime addresses. Loading performs no maintenance
 actions. The default `manage=False` keeps ordinary runtime types. Both
 `fhrs.runtime.load_manifest()` and `fhrs.runtime.load_package()` accept the flag.
+
+Use `ManagedResource.put()` to place file or directory contents in working storage:
+
+```python
+resource = dataset.resource("report")
+path = resource.put("download.csv")
+path = resource.put(b"id,value\n1,10\n", overwrite=True)
+directory = dataset.resource("parts").put("downloaded_parts")
+```
+
+Inputs may be a local path, bytes, or an open binary stream (including
+`io.BytesIO`). Streams are read from their current position and left open.
+The destination uses the resource's dataset-relative key and declared suffix,
+under `working_directory`; parent directories are created as needed. It returns
+the destination `Path`. Existing files require `overwrite=True`. Writes are
+staged in a temporary file before publication, and failed copies leave any
+existing destination intact. Directory resources accept local directory paths
+only. Their contents, including nested and empty directories, are copied directly
+into the resource's working directory. `overwrite=True` replaces the entire
+directory, removing stale contents. Directory replacement is not atomic: it uses
+a temporary backup and restores the original if publication fails. If restoration
+also fails, the backup is retained and its path is reported in the error.
+Read-only backup files are made writable before deletion. If cleanup still
+fails after a successful replacement, `.put()` returns the destination and emits
+a `RuntimeWarning` with the retained temporary directory's path.
+The method does not change manifest locations, size, or checksums. The name
+`working` is reserved for runtime storage and cannot be declared as a storage
+name or a location name.
 
 For package names, this imports `<package_name>.fhrs_setup.dataset` from an
 installed or otherwise importable Python package and returns a runtime dataset.
@@ -185,8 +213,9 @@ to `runtime.Dataset(..., working_directory=...)`. Local resource paths use
 support the same selection through `member.source("working")` and
 `member.files(source="working")`. Selecting a working source creates no files
 or directories. It is excluded from `sources` and manifest dumps, so default
-reads still use declared locations. A declared location or storage named
-`working` takes precedence over the generated local source.
+reads still use declared locations. The storage name and location name `working`
+are reserved and rejected during manifest validation. Use `working_directory`
+to configure the generated local storage.
 
 Directory resource manifests may declare `members`, mapping nonempty names to nonempty
 glob strings. Manifest `members` defaults to `None`, meaning no declaration;
