@@ -173,9 +173,10 @@ reads still use declared locations. A declared location or storage named
 `working` takes precedence over the generated local source.
 
 Directory resource manifests may declare `members`, mapping nonempty names to nonempty
-glob strings. File resources must omit `members`, including an empty mapping.
-Omission defaults to an empty dictionary; declarations are stored
-without accessing files or expanding patterns:
+glob strings. Manifest `members` defaults to `None`, meaning no declaration;
+`None` is omitted when writing manifests. An explicit empty mapping is preserved
+for directories. File resources reject any non-`None` value, including an empty
+mapping. Declarations are stored without accessing files or expanding patterns:
 
 ```yaml
 resources:
@@ -189,6 +190,7 @@ resources:
 ```
 
 Runtime resources expose a read-only `members` mapping and `member(name)` lookup.
+When the manifest declares no members, the runtime mapping is empty.
 Each `ResourceMember` carries its `name`, `pattern`, parent `resource`, and ordered
 `sources`, with one pattern address per directory mirror. Construction does not
 access files. `member.source(name)` uses the resource's location-name-first,

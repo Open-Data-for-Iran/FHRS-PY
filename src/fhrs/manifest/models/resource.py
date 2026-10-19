@@ -32,13 +32,14 @@ class Resource(BaseModel, extra="forbid"):
         description="Preferred file extension, including the leading dot (e.g. .tar.gz).",
     )
     checksums: Checksums | None = None
-    members: dict[
-        Annotated[str, Field(min_length=1)], Annotated[str, Field(min_length=1)]
-    ] = Field(default_factory=dict)
+    members: (
+        dict[Annotated[str, Field(min_length=1)], Annotated[str, Field(min_length=1)]]
+        | None
+    ) = None
 
     @model_validator(mode="after")
     def check_resource(self) -> Self:
-        if self.type == "file" and "members" in self.model_fields_set:
+        if self.type == "file" and self.members is not None:
             raise ValueError("File resources cannot declare members")
         if "size" in self.model_fields_set and self.size is None:
             raise ValueError("File size must be a nonnegative integer in bytes")

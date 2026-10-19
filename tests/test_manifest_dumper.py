@@ -47,6 +47,27 @@ class ManifestWriterTests(unittest.TestCase):
     def read(self, path):
         return YAML(typ="safe").load((self.root / path).read_text(encoding="utf-8"))
 
+    def test_members_omit_none_and_preserve_explicit_empty_directory_mapping(self):
+        dataset = manifest.Dataset(
+            name="survey",
+            resources={
+                "file": {},
+                "directory": {"type": "directory"},
+                "empty_directory": {"type": "directory", "members": {}},
+            },
+        )
+        for format in ("yaml", "json"):
+            with self.subTest(format=format):
+                manifest.dump(dataset, self.root, format=format)
+                path = f"manifest.{format}"
+                resources = self.read(path)["resources"]
+                self.assertNotIn("members", resources["file"])
+                self.assertNotIn("members", resources["directory"])
+                self.assertEqual(resources["empty_directory"]["members"], {})
+                self.assertEqual(
+                    manifest.load(self.root / path).model_dump(), dataset.model_dump()
+                )
+
     def test_dump_options_loaded_as_defaults_but_not_serialized(self):
         source = self.root / "source.yaml"
         source.write_text(

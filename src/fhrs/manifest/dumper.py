@@ -100,10 +100,6 @@ def _build_documents(
     def render(node: BaseCollection, key: str, containing_file: str) -> dict[str, Any]:
         visited.add(key)
         data = node.model_dump(mode="json", exclude={"collections"}, exclude_none=True)
-        # Files default to an empty members mapping but forbid declaring that field.
-        for resource in data["resources"].values():
-            if resource["type"] == "file":
-                resource.pop("members", None)
         children = {}
         for name, child in node.collections.items():
             child_key = f"{key}/{name}" if key else name

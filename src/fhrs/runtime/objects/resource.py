@@ -53,7 +53,7 @@ class Resource(BaseRuntime):
             MappingProxyType(
                 {
                     name: ResourceMember(name, pattern, self)
-                    for name, pattern in self.manifest.members.items()
+                    for name, pattern in (self.manifest.members or {}).items()
                 }
             ),
         )

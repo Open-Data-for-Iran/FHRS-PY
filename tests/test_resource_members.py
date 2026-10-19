@@ -10,6 +10,22 @@ from fhrs.manifest import Dataset as DatasetManifest
 
 
 class ResourceMemberTests(unittest.TestCase):
+    def test_absent_manifest_members_bind_to_an_empty_runtime_mapping(self):
+        for resource_type in ("file", "directory"):
+            for fields in ({}, {"members": None}):
+                with self.subTest(type=resource_type, fields=fields):
+                    dataset = runtime.Dataset(
+                        DatasetManifest(
+                            name="survey",
+                            resources={"data": {"type": resource_type, **fields}},
+                        )
+                    )
+                    resource = dataset.resource("data")
+                    self.assertIsNone(resource.manifest.members)
+                    self.assertEqual(resource.members, {})
+                    with self.assertRaises(KeyError):
+                        resource.member("missing")
+
     def test_members_without_locations_bind_but_cannot_list_files(self):
         dataset = runtime.Dataset(
             DatasetManifest.model_validate(

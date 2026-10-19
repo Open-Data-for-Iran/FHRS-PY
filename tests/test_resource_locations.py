@@ -98,9 +98,8 @@ class ResourceLocationTests(unittest.TestCase):
         )
         self.assertEqual(resource.members, members)
         self.assertEqual(resource.model_dump()["members"], members)
-        self.assertEqual(ResourceManifest(locations=[{"uri": "data.csv"}]).members, {})
+        self.assertIsNone(ResourceManifest(locations=[{"uri": "data.csv"}]).members)
         for invalid in (
-            None,
             [],
             {"": "*.csv"},
             {"data": ""},
@@ -111,6 +110,16 @@ class ResourceLocationTests(unittest.TestCase):
                 ResourceManifest(
                     type="directory", locations=[{"uri": "data/"}], members=invalid
                 )
+
+    def test_manifest_members_default_to_none_and_omit_from_serialization(self):
+        for resource_type in ("file", "directory"):
+            for fields in ({}, {"members": None}):
+                with self.subTest(type=resource_type, fields=fields):
+                    declaration = ResourceManifest(type=resource_type, **fields)
+                    self.assertIsNone(declaration.members)
+                    data = declaration.model_dump(exclude_none=True)
+                    self.assertNotIn("members", data)
+                    self.assertEqual(ResourceManifest.model_validate(data), declaration)
 
     def test_file_resources_reject_explicit_members_even_when_empty(self):
         for fields in ({}, {"type": "file"}):
