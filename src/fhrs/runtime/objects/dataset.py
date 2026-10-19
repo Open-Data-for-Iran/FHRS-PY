@@ -3,14 +3,16 @@
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal
 
 from ...manifest import dump as dump_manifest
 from ...manifest.models.dataset import Dataset as DatasetManifest
+from ...manifest.models.storage import BaseStorage as StorageManifest
 from ._base import BaseCollection
 from .source import Source
-from .storage import Storage
+from .storage import Storage, _WorkingStorage
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -19,17 +21,31 @@ class Dataset(BaseCollection):
 
     manifest: DatasetManifest
     source: Source | None = None
+    working_directory: str | os.PathLike[str] = "data/<dataset.name>"
     storages: Mapping[str, Storage] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        directory = os.fspath(self.working_directory)
+        if "<dataset.name>" in directory:
+            if Path(self.name).name != self.name or self.name in (".", ".."):
+                raise ValueError(
+                    "Working directory template requires a dataset name without path components"
+                )
+            directory = directory.replace("<dataset.name>", self.name)
+        self._setattr("working_directory", Path(directory).resolve())
         if self.source is None and hasattr(self.manifest, "_storage"):
             self._setattr("source", Source(**self.manifest._storage))
         self._setattr(
             "storages",
             MappingProxyType(
                 {
-                    name: Storage(manifest, name=name, dataset=self)
-                    for name, manifest in self.manifest.storages.items()
+                    "working": _WorkingStorage(
+                        StorageManifest(protocol="file"), name="working", dataset=self
+                    ),
+                    **{
+                        name: Storage(manifest, name=name, dataset=self)
+                        for name, manifest in self.manifest.storages.items()
+                    },
                 }
             ),
         )

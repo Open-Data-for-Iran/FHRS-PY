@@ -13,6 +13,19 @@ from fhrs.manifest.loader import _load_internal_collection, _resolve_collection
 
 
 class ManifestLoaderTests(unittest.TestCase):
+    def test_dataset_names_reject_path_components(self):
+        for name in ("survey/2026", "survey\\2026", "/survey", "\\survey", ".", ".."):
+            with self.subTest(name=name):
+                with self.assertRaises(ValidationError):
+                    Dataset(name=name)
+                with self.assertRaises(ValidationError):
+                    load(self.write("invalid-name.json", json.dumps({"name": name})))
+
+    def test_dataset_names_preserve_ordinary_dots_and_unicode(self):
+        for name in ("survey.v2", "survey-2026", "survey_2026", "گزارش"):
+            with self.subTest(name=name):
+                self.assertEqual(Dataset(name=name).name, name)
+
     def load_collection(self, urlpath, *, storage_options=None):
         collection = _load_internal_collection(
             str(urlpath), storage_options=storage_options

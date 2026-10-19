@@ -105,11 +105,15 @@ class Resource(BaseRuntime):
         return self.manifest.checksums
 
     def source(self, name: str) -> Source:
-        """Find a source by location name, then storage name, in declared order."""
+        """Select a declared source, or explicitly select local ``working`` data."""
         for location, source in zip(self.locations, self.sources, strict=True):
             if location.name == name:
                 return source
         for location, source in zip(self.locations, self.sources, strict=True):
             if location.storage == name:
                 return source
+        if name == "working":
+            return self.dataset.storage("working").resolve(
+                self.key + (self.suffix or "")
+            )
         raise KeyError(name)

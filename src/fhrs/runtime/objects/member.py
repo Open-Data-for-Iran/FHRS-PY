@@ -64,8 +64,13 @@ class ResourceMember(BaseRuntime):
 
     def source(self, name: str) -> Source:
         """Select a pattern source using the resource's location/storage lookup."""
-        index = self.resource.sources.index(self.resource.source(name))
-        return self.sources[index]
+        source = self.resource.source(name)
+        if source in self.resource.sources:
+            return self.sources[self.resource.sources.index(source)]
+        return Source(
+            source.urlpath.rstrip("/") + "/" + self.pattern,
+            dict(source.storage_options),
+        )
 
     def files(self, source: str | None = None) -> tuple[Source, ...]:
         """List sorted matching files from one mirror, using the first by default.

@@ -107,6 +107,28 @@ for source in dataset.resource("data").sources:
     print(source.to_fsspec())
 ```
 
+Every runtime resource also supports an explicitly selected `working` source:
+
+```python
+dataset = runtime.load("examples/basic", working_directory="local-data")
+local = dataset.resource("data").source("working")
+working = dataset.storage("working")  # Also available in dataset.storages.
+local = working.resolve("data")
+```
+
+The working directory defaults to `data/<dataset.name>` under the current
+directory. Dataset initialization replaces `<dataset.name>` with the manifest's
+name in any supplied path and resolves it to an absolute path.
+Dataset names cannot contain `/` or `\` or be exactly `.` or `..`.
+An explicit `working_directory` overrides this entire path; it can also be passed
+to `runtime.Dataset(..., working_directory=...)`. Local resource paths use
+`resource.key + (resource.suffix or "")` beneath that directory. Directories
+support the same selection through `member.source("working")` and
+`member.files(source="working")`. Selecting a working source creates no files
+or directories. It is excluded from `sources` and manifest dumps, so default
+reads still use declared locations. A declared location or storage named
+`working` takes precedence over the generated local source.
+
 Directory resource manifests may declare `members`, mapping nonempty names to nonempty
 glob strings. File resources must omit `members`, including an empty mapping.
 Omission defaults to an empty dictionary; declarations are stored

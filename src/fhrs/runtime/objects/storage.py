@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import posixpath
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import fsspec
@@ -74,3 +75,21 @@ class Storage(BaseRuntime):
         else:
             urlpath = f"{protocol}://{posixpath.join(self.base_path, path)}"
         return Source(urlpath, storage_options=options)
+
+
+class _WorkingStorage(Storage):
+    """Local storage rooted at the runtime dataset's working directory."""
+
+    __slots__ = ()
+
+    @property
+    def base_path(self) -> str:
+        assert self.dataset is not None
+        return Path(self.dataset.working_directory).as_posix()
+
+    def resolve(self, uri: str) -> Source:
+        root = Path(self.base_path)
+        path = (root / uri).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError(f"Working resource path escapes its directory: {uri!r}")
+        return Source(path.as_posix())

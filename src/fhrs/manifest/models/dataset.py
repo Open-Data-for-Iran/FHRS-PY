@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .collection import BaseCollection
 from .storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
@@ -26,3 +26,10 @@ class Dataset(BaseCollection):
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)
     )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, name: str) -> str:
+        if "/" in name or "\\" in name or name in (".", ".."):
+            raise ValueError("Dataset name must not contain path components")
+        return name
