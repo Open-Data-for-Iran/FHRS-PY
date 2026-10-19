@@ -22,7 +22,7 @@ def _csv_files(
         if not files:
             raise FileNotFoundError(f"CSV member {resource.name!r} matched no files")
         return files
-    if resource.type == "directory":
+    if resource.resource_type == "directory":
         raise ValueError("CSV directory resources require a member selecting files")
     if source is None and not resource.sources:
         raise ValueError(f"Resource {resource.key!r} has no locations")

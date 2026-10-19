@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
 
 from ...manifest.models.resource import Checksums, Location
@@ -25,7 +24,6 @@ class Resource(BaseRuntime):
 
     manifest: ResourceManifest
     name: str
-    dataset: Dataset = field(repr=False, compare=False)
     parent: BaseCollection = field(repr=False, compare=False)
     sources: tuple[Source, ...] = field(init=False)
     members: Mapping[str, ResourceMember] = field(init=False, repr=False, compare=False)
@@ -48,15 +46,24 @@ class Resource(BaseRuntime):
                 address = source.resolve(path)
             resolved.append(address)
         self._setattr("sources", tuple(resolved))
-        self._setattr(
+        self._set_mapping(
             "members",
-            MappingProxyType(
-                {
-                    name: ResourceMember(name, pattern, self)
-                    for name, pattern in (self.manifest.members or {}).items()
-                }
-            ),
+            {
+                name: ResourceMember(name, pattern, self)
+                for name, pattern in (self.manifest.members or {}).items()
+            },
         )
+
+    @property
+    def dataset(self) -> Dataset:
+        """The dataset owning this resource, derived from its parent."""
+        from .collection import Collection
+        from .dataset import Dataset
+
+        if isinstance(self.parent, Dataset):
+            return self.parent
+        assert isinstance(self.parent, Collection)
+        return self.parent.dataset
 
     def member(self, name: str) -> ResourceMember:
         """Look up a declared member or bind an inline ``member:pattern``.
@@ -83,7 +90,7 @@ class Resource(BaseRuntime):
         return "/".join(reversed(parts))
 
     @property
-    def type(self) -> Literal["file", "directory"]:
+    def resource_type(self) -> Literal["file", "directory"]:
         return self.manifest.type
 
     @property

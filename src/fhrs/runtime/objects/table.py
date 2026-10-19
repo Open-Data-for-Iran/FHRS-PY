@@ -24,9 +24,20 @@ class Table(BaseRuntime):
 
     manifest: TableManifest
     name: str
-    resources: list[Resource | ResourceMember] = field(repr=False)
+    parent: BaseCollection = field(repr=False, compare=False)
+    resources: list[Resource | ResourceMember] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        references = self.manifest.resource
+        self._setattr(
+            "resources",
+            [
+                self.parent.resource(reference)
+                for reference in (
+                    [references] if isinstance(references, str) else references
+                )
+            ],
+        )
         if not self.resources:
             raise ValueError("Table requires at least one resource")
 
@@ -40,11 +51,14 @@ class Table(BaseRuntime):
 
     @property
     def dataset(self) -> Dataset:
-        return self.resources[0].dataset
+        """The dataset owning this table, derived from its parent."""
+        from .collection import Collection
+        from .dataset import Dataset
 
-    @property
-    def parent(self) -> BaseCollection:
-        return self.resources[0].parent
+        if isinstance(self.parent, Dataset):
+            return self.parent
+        assert isinstance(self.parent, Collection)
+        return self.parent.dataset
 
     @overload
     def load(

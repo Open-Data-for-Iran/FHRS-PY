@@ -7,6 +7,7 @@ from fhrs import runtime
 from fhrs.manifest import Collection as CollectionManifest
 from fhrs.manifest import Dataset as DatasetManifest
 from fhrs.manifest import ManifestReference
+from fhrs.manifest import Table as TableManifest
 
 
 class RuntimeCollectionTests(unittest.TestCase):
@@ -296,7 +297,7 @@ class RuntimeCollectionTests(unittest.TestCase):
         dataset = self.make_dataset()
         source = runtime.Source("standalone.yaml")
         collection = runtime.Collection(
-            CollectionManifest(title="Attached"), "empty", dataset, dataset, source
+            CollectionManifest(title="Attached"), "empty", dataset, source
         )
         self.assertEqual(collection.title, "Attached")
         self.assertIs(collection.source, source)
@@ -308,11 +309,19 @@ class RuntimeCollectionTests(unittest.TestCase):
 
     def test_owners_are_required(self):
         dataset = self.make_dataset()
-        for constructor, manifest in (
-            (runtime.Collection, CollectionManifest()),
-            (runtime.Resource, dataset.manifest.resources["data"]),
+        for constructor, manifest, missing_owners in (
+            (
+                runtime.Collection,
+                CollectionManifest(),
+                ({}, {"dataset": dataset}),
+            ),
+            (
+                runtime.Resource,
+                dataset.manifest.resources["data"],
+                ({}, {"dataset": dataset}),
+            ),
         ):
-            for owners in ({}, {"dataset": dataset}, {"parent": dataset}):
+            for owners in missing_owners:
                 with (
                     self.subTest(constructor=constructor, owners=list(owners)),
                     self.assertRaises(TypeError),
@@ -322,6 +331,75 @@ class RuntimeCollectionTests(unittest.TestCase):
         table_manifest = dataset.manifest.tables["rows"]
         with self.assertRaises(TypeError):
             runtime.Table(table_manifest, name="unbound")
+
+    def test_collection_constructor_derives_dataset_from_parent(self):
+        plain = self.make_dataset()
+        for dataset in (plain,):
+            wave = dataset.collection("wave")
+            for parent in (dataset, wave, wave.collection("nested")):
+                collection_type = type(wave)
+                with self.subTest(collection=collection_type, parent=parent.name):
+                    collection = collection_type(
+                        wave.manifest, name="attached", parent=parent
+                    )
+                    self.assertIs(collection.dataset, dataset)
+                    self.assertIs(collection.parent, parent)
+                    self.assertIs(collection.source, dataset.source)
+                    self.assertIs(collection.resource("data").dataset, dataset)
+                    self.assertIs(collection.resource("data").parent, collection)
+                    self.assertIs(collection.table("rows").dataset, dataset)
+                    nested = collection.collection("nested")
+                    self.assertIs(nested.dataset, dataset)
+                    self.assertIs(nested.parent, collection)
+
+    def test_resource_constructor_derives_dataset_from_parent(self):
+        plain = self.make_dataset()
+        for dataset in (plain,):
+            wave = dataset.collection("wave")
+            for parent in (dataset, wave, wave.collection("nested")):
+                resource_type = type(parent.resource("data"))
+                with self.subTest(resource=resource_type, parent=parent):
+                    resource = resource_type(
+                        parent.manifest.resources["data"], name="data", parent=parent
+                    )
+                    self.assertIs(resource.dataset, dataset)
+                    self.assertIs(resource.parent, parent)
+                    self.assertEqual(resource.sources, parent.resource("data").sources)
+                    self.assertEqual(resource.key, parent.resource("data").key)
+                    self.assertEqual(
+                        resource.source("working"),
+                        parent.resource("data").source("working"),
+                    )
+
+    def test_table_constructor_resolves_resources_from_parent(self):
+        plain = self.make_dataset()
+        for dataset in (plain,):
+            wave = dataset.collection("wave")
+            for parent in (dataset, wave, wave.collection("nested")):
+                table_type = type(parent.table("rows"))
+                for reference in ("data", ["data", "data"]):
+                    with self.subTest(
+                        table=table_type, parent=parent.name, reference=reference
+                    ):
+                        table = table_type(
+                            TableManifest(resource=reference, reader="csv"),
+                            name="attached",
+                            parent=parent,
+                        )
+                        self.assertIs(table.parent, parent)
+                        self.assertIs(table.dataset, dataset)
+                        self.assertEqual(
+                            len(table.resources),
+                            1 if isinstance(reference, str) else len(reference),
+                        )
+                        for resource in table.resources:
+                            self.assertIs(resource, parent.resource("data"))
+                with self.assertRaises(KeyError):
+                    table_type(
+                        TableManifest(resource="missing", reader="csv"),
+                        name="missing",
+                        parent=parent,
+                    )
 
 
 if __name__ == "__main__":

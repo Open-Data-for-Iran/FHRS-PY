@@ -94,10 +94,7 @@ class CSVReaderChecks:
         table = runtime.Table(
             TableManifest(resource=["directory#rows", "file"], reader="test_csv"),
             name="rows",
-            resources=[
-                self.dataset.resource("directory#rows"),
-                self.dataset.resource("file"),
-            ],
+            parent=self.dataset,
         )
         self.assertEqual(self.ids(table.load(backend=self.backend)), [1, 2, 1])
         self.assertEqual(
@@ -109,7 +106,7 @@ class CSVReaderChecks:
         table = runtime.Table(
             TableManifest(resource="file", reader="csv"),
             name="rows",
-            resources=[self.dataset.resource("file")],
+            parent=self.dataset,
         )
         options = {"sep": ";"} if self.backend == "pandas" else {"separator": ";"}
         self.assertEqual(self.ids(table.load(backend=self.backend, **options)), [7])
@@ -120,7 +117,7 @@ class CSVReaderChecks:
         unknown = runtime.Table(
             TableManifest(resource="file", reader="unknown"),
             name="rows",
-            resources=table.resources,
+            parent=table.parent,
         )
         with self.assertRaisesRegex(ValueError, "reader"):
             unknown.load(backend=self.backend)

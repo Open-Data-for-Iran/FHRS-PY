@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from ...manifest.models.collection import Collection as CollectionManifest
 from ...manifest.models.collection import ManifestReference
+from ...manifest.models.dataset import Dataset as DatasetManifest
 
 if TYPE_CHECKING:
     from .collection import Collection
@@ -28,21 +29,21 @@ class BaseRuntime:
         """Assign a field during initialization without invoking the frozen setter."""
         object.__setattr__(self, name, value)
 
+    def _set_mapping[T](self, name: str, values: dict[str, T]) -> None:
+        """Assign a read-only mapping during initialization."""
+        self._setattr(name, MappingProxyType(values))
+
 
 @dataclass(frozen=True, slots=True, eq=False)
 class BaseCollection(BaseRuntime, ABC):
     """Common metadata and locally bound contents of a manifest node."""
 
-    manifest: CollectionManifest
+    manifest: CollectionManifest | DatasetManifest
     resources: Mapping[str, Resource] = field(init=False, repr=False)
     tables: Mapping[str, Table] = field(init=False, repr=False)
     collections: Mapping[str, Collection | ManifestReference] = field(
         init=False, repr=False
     )
-
-    @abstractmethod
-    def __post_init__(self) -> None:
-        """Bind contents using the concrete node's ownership context."""
 
     def _bind_contents(
         self,
@@ -53,45 +54,28 @@ class BaseCollection(BaseRuntime, ABC):
         from .resource import Resource
         from .table import Table
 
-        self._setattr(
+        self._set_mapping(
             "resources",
-            MappingProxyType(
-                {
-                    name: Resource(manifest, name=name, dataset=dataset, parent=self)
-                    for name, manifest in self.manifest.resources.items()
-                }
-            ),
+            {
+                name: Resource(manifest, name=name, parent=self)
+                for name, manifest in self.manifest.resources.items()
+            },
         )
-        self._setattr(
+        self._set_mapping(
             "tables",
-            MappingProxyType(
-                {
-                    name: Table(
-                        manifest,
-                        name=name,
-                        resources=[
-                            self.resource(reference)
-                            for reference in (
-                                [manifest.resource]
-                                if isinstance(manifest.resource, str)
-                                else manifest.resource
-                            )
-                        ],
-                    )
-                    for name, manifest in self.manifest.tables.items()
-                }
-            ),
+            {
+                name: Table(manifest, name=name, parent=self)
+                for name, manifest in self.manifest.tables.items()
+            },
         )
-        self._setattr(
+        self._set_mapping(
             "collections",
-            MappingProxyType(
-                {
-                    name: manifest
-                    if isinstance(manifest, ManifestReference)
-                    else Collection(manifest, name=name, dataset=dataset, parent=self)
-                    for name, manifest in self.manifest.collections.items()
-                }
-            ),
+            {
+                name: manifest
+                if isinstance(manifest, ManifestReference)
+                else Collection(manifest, name=name, parent=self)
+                for name, manifest in self.manifest.collections.items()
+            },
         )
 
     @property

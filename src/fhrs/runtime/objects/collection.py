@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from fhrs.manifest.models.collection import Collection as CollectionManifest
+
 from ._base import BaseCollection
 from .source import Source
 
@@ -14,10 +16,10 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Collection(BaseCollection):
-    """A collection bound to its parent, dataset, and defining manifest source."""
+    """A collection bound to its parent and defining manifest source."""
 
     name: str
-    dataset: Dataset = field(repr=False)
+    manifest: CollectionManifest
     parent: BaseCollection = field(repr=False)
     source: Source | None = None
 
@@ -32,3 +34,13 @@ class Collection(BaseCollection):
             )
             self._setattr("source", source)
         self._bind_contents(dataset=self.dataset)
+
+    @property
+    def dataset(self) -> Dataset:
+        """The dataset owning this collection, derived from its parent."""
+        from .dataset import Dataset
+
+        if isinstance(self.parent, Dataset):
+            return self.parent
+        assert isinstance(self.parent, Collection)
+        return self.parent.dataset

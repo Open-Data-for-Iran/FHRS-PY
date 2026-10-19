@@ -4,7 +4,6 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any, Literal
 
 from ...manifest import dump as dump_manifest
@@ -35,19 +34,17 @@ class Dataset(BaseCollection):
         self._setattr("working_directory", Path(directory).resolve())
         if self.source is None and hasattr(self.manifest, "_storage"):
             self._setattr("source", Source(**self.manifest._storage))
-        self._setattr(
+        self._set_mapping(
             "storages",
-            MappingProxyType(
-                {
-                    "working": _WorkingStorage(
-                        StorageManifest(protocol="file"), name="working", dataset=self
-                    ),
-                    **{
-                        name: Storage(manifest, name=name, dataset=self)
-                        for name, manifest in self.manifest.storages.items()
-                    },
-                }
-            ),
+            {
+                "working": _WorkingStorage(
+                    StorageManifest(protocol="file"), name="working", dataset=self
+                ),
+                **{
+                    name: Storage(manifest, name=name, dataset=self)
+                    for name, manifest in self.manifest.storages.items()
+                },
+            },
         )
         self._bind_contents(dataset=self)
 

@@ -25,7 +25,7 @@ class ResourceMember(BaseRuntime):
 
     def __post_init__(self) -> None:
         """Bind pattern addresses without listing directories or opening files."""
-        if self.resource.type != "directory":
+        if self.resource.resource_type != "directory":
             raise ValueError("Resource members require a directory resource")
         if not self.name or not self.pattern:
             raise ValueError("Member name and pattern must be nonempty")
