@@ -438,11 +438,13 @@ on runtime datasets under the same names:
 
 ```python
 declaration = fhrs.manifest.Dataset(
-    name="survey", schema_version="2", release="2026-10-20.1"
+    name="survey", schema_version="2.3.1", release="2026-10-26.1"
 )
 dataset = fhrs.runtime.Dataset(declaration)
-dataset.schema_version  # "2"
-dataset.release         # "2026-10-20.1"
+dataset.schema_version  # "2.3.1"
+dataset.release         # "2026-10-26.1"
+dataset.status          # "in_development" (default)
+dataset.version         # "2.3.1@2026-10-26.1~dev"
 ```
 
 Both are nonblank strings when provided and default to `None`. `schema_version`
@@ -451,6 +453,25 @@ They are preserved when manifests are dumped and reloaded. They are independent
 of `fhrs_version`; neither changes the Python package version. These fields only
 describe the loaded dataset: loaders do not yet select releases or match schema
 compatibility. Collections do not inherit these dataset fields.
+
+`version` is a Pydantic computed field on manifest datasets and a read-only
+property on runtime datasets. It is derived from `schema_version`, `release`,
+and `status`, and included in `model_dump()` and `model_dump_json()` output.
+Saved manifests exclude computed fields so they can be loaded without supplying
+read-only values. It is `None` if either version component is missing. The characters
+`@` and `~` are reserved and cannot appear in either component.
+
+With `status="published"`, the example version becomes `"2.3.1@2026-10-26.1"`.
+A `~dev` suffix marks a mutable development reference: loading the same version
+later may yield different contents. Published versions identify immutable
+snapshots within a dataset; publishers must assign a new identifier when the
+snapshot changes. FHRS does not enforce storage immutability.
+
+Publishers should use semantic versioning for `schema_version`: major changes
+break the data contract, minor changes add compatible features, and patch
+changes make compatible corrections to the contract. Data-only updates change
+`release`. Compatibility matching and semantic-version validation are not
+implemented by these properties.
 
 See [the examples](examples/README.md) for layouts, storage declarations, and
 manifest pointers.

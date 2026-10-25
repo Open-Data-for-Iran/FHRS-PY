@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, ClassVar, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from ._base import Name
 from .collection import BaseCollection
@@ -46,6 +46,22 @@ class Dataset(BaseCollection):
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)
     )
+
+    @computed_field
+    @property
+    def version(self) -> str | None:
+        """Combined schema and release identifier; development references are mutable."""
+        if self.schema_version is None or self.release is None:
+            return None
+        suffix = "~dev" if self.status == "in_development" else ""
+        return f"{self.schema_version}@{self.release}{suffix}"
+
+    @field_validator("schema_version", "release")
+    @classmethod
+    def check_version_component(cls, value: str | None) -> str | None:
+        if value is not None and ("@" in value or "~" in value):
+            raise ValueError("Version components must not contain '@' or '~'")
+        return value
 
     @model_validator(mode="after")
     def check_storage_names(self) -> Self:

@@ -101,7 +101,12 @@ def _build_documents(
 
     def render(node: BaseCollection, key: str, containing_file: str) -> dict[str, Any]:
         visited.add(key)
-        data = node.model_dump(mode="json", exclude={"collections"}, exclude_none=True)
+        data = node.model_dump(
+            mode="json",
+            exclude={"collections"},
+            exclude_none=True,
+            exclude_computed_fields=True,
+        )
         children = {}
         for name, child in node.collections.items():
             child_key = f"{key}/{name}" if key else name

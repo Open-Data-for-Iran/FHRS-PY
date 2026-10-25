@@ -77,6 +77,11 @@ class Dataset(BaseCollection):
         """The publication status, defaulting to in development."""
         return self.manifest.status
 
+    @property
+    def version(self) -> str | None:
+        """Combined schema and release identifier, with '~dev' during development."""
+        return self.manifest.version
+
     def storage(self, name: str) -> Storage:
         return self.storages[name]
 
