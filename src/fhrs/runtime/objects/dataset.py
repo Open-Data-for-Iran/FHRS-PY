@@ -72,6 +72,11 @@ class Dataset(BaseCollection):
         """The declared data release identifier, if supplied."""
         return self.manifest.release
 
+    @property
+    def status(self) -> Literal["in_development", "published"]:
+        """The publication status, defaulting to in development."""
+        return self.manifest.status
+
     def storage(self, name: str) -> Storage:
         return self.storages[name]
 

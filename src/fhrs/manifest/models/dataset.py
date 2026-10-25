@@ -30,6 +30,7 @@ class Dataset(BaseCollection):
         "description",
         "schema_version",
         "release",
+        "status",
         "storages",
         "resources",
         "tables",
@@ -40,6 +41,7 @@ class Dataset(BaseCollection):
     name: Name
     schema_version: str | None = Field(default=None, min_length=1, pattern=r"\S")
     release: str | None = Field(default=None, min_length=1, pattern=r"\S")
+    status: Literal["in_development", "published"] = "in_development"
     dump_options: DumpOptions = Field(default_factory=DumpOptions, exclude=True)
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)
