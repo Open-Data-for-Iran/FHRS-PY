@@ -246,7 +246,7 @@ class ManifestWriterTests(unittest.TestCase):
         self.assertEqual(data["collections"]["wave"]["title"], "Wave")
         self.assertEqual(dataset.dump_options.format, "json")
 
-    def test_runtime_dataset_dumps_flat_yaml_by_default(self):
+    def test_runtime_dataset_dumps_flat_yaml_to_fhrs_by_default(self):
         dataset = runtime.Dataset(
             self.dataset, source=runtime.Source(str(self.root / "source.yaml"))
         )
@@ -257,10 +257,14 @@ class ManifestWriterTests(unittest.TestCase):
         finally:
             os.chdir(previous)
         self.assertEqual(
-            manifest.load(self.root / "manifest.yaml").model_dump(),
+            manifest.load(self.root / ".fhrs" / "manifest.yaml").model_dump(),
             self.dataset.model_dump(),
         )
-        self.assertEqual(list(self.root.iterdir()), [self.root / "manifest.yaml"])
+        self.assertEqual(list(self.root.iterdir()), [self.root / ".fhrs"])
+        self.assertEqual(
+            list((self.root / ".fhrs").iterdir()),
+            [self.root / ".fhrs" / "manifest.yaml"],
+        )
 
     def test_runtime_dataset_dumps_linked_json_with_storage_options(self):
         dataset = runtime.Dataset(

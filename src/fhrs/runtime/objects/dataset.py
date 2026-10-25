@@ -87,7 +87,7 @@ class Dataset(BaseCollection):
 
     def dump(
         self,
-        destination: str | os.PathLike[str] | None = None,
+        destination: str | os.PathLike[str] = ".fhrs",
         *,
         format: Literal["yaml", "json"] | None = None,
         layout: Mapping[str, str] | None = None,
