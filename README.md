@@ -352,8 +352,8 @@ The table's `dataset` and `parent` refer to the owning dataset/collection even
 when its first resource is a member.
 
 `Table.load()` selects the reader from `fhrs.runtime.readers.READERS` using the
-manifest's `reader` value. CSV is currently registered; `parquet` and `excel`
-can be declared but require reader implementations before loading.
+manifest's `reader` value. CSV and Parquet readers are registered. Excel
+can be declared but requires a reader implementation before loading.
 
 ```python
 frame = table.load()  # pandas
@@ -383,6 +383,14 @@ backend. Source selection and reader options are forwarded to each reference.
 The default selects each resource's first mirror. Unknown readers or backends
 raise `ValueError`. Add a reader instance with `READERS["format"] = MyReader()`;
 custom readers implement `BaseReader.read_pandas()` and `read_polars()`.
+
+The Parquet reader supports pandas and Polars, named sources, column selection
+with `columns=[...]`, and directory members selecting Parquet files. Like CSV,
+member files are read in sorted order and multiple resources are concatenated in
+reference order. Bare directory resources require an explicit member selector.
+Backend options are forwarded to `pandas.read_parquet` or `polars.read_parquet`.
+Install the existing pandas or polars extra for the corresponding dependencies.
+`ParquetReader` is also available from `fhrs.runtime.readers` for direct use.
 
 The CSV reader can be used directly:
 

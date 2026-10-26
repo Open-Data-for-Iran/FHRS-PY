@@ -2,6 +2,7 @@
 
 from ._base import BaseReader
 from .csv_reader import CSVReader
+from .parquet_reader import ParquetReader
 from .registry import READERS
 
-__all__ = ["READERS", "BaseReader", "CSVReader"]
+__all__ = ["READERS", "BaseReader", "CSVReader", "ParquetReader"]
