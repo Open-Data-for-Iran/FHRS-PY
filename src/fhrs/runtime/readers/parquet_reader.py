@@ -26,9 +26,7 @@ def _parquet_files(
         return files
     if resource.resource_type == "directory":
         raise ValueError("Parquet directory resources require a member selecting files")
-    if source is None and not resource.sources:
-        raise ValueError(f"Resource {resource.key!r} has no locations")
-    return (resource.sources[0] if source is None else resource.source(source),)
+    return (resource.source(source),)
 
 
 class ParquetReader(BaseReader):

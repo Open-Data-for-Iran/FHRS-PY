@@ -1,6 +1,7 @@
 import importlib.util
 import unittest
 from io import BytesIO
+from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 import fsspec
@@ -90,10 +91,13 @@ class ParquetReaderChecks:
             read(parts.member("member:missing*.parquet"))
         with self.assertRaises(KeyError):
             read(self.dataset.resource("rows"), source="unknown")
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
-            manifest.Dataset(name="empty", resources={"rows": {}})
+            manifest.Dataset(name="empty", resources={"rows": {}}),
+            working_directory=directory.name,
         )
-        with self.assertRaisesRegex(ValueError, "no locations"):
+        with self.assertRaises(FileNotFoundError):
             read(dataset.resource("rows"))
         self.fs.pipe(f"{self.root}/primary/a.parquet", b"invalid parquet")
         if self.backend == "pandas":

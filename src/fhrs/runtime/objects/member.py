@@ -62,7 +62,7 @@ class ResourceMember(BaseRuntime):
         """The collection owning this member's resource."""
         return self.resource.parent
 
-    def source(self, name: str) -> Source:
+    def source(self, name: str | None = None) -> Source:
         """Select a pattern source using the resource's location/storage lookup."""
         source = self.resource.source(name)
         if source in self.resource.sources:
@@ -73,12 +73,9 @@ class ResourceMember(BaseRuntime):
         )
 
     def files(self, source: str | None = None) -> tuple[Source, ...]:
-        """List sorted matching files from one mirror, using the first by default.
+        """List sorted files from the first location, or working data if none exist.
 
         Matches are refreshed on every call; no matches returns an empty tuple.
         Filesystem errors propagate without falling back to another mirror.
         """
-        if source is None and not self.sources:
-            raise ValueError(f"Resource {self.resource.key!r} has no locations")
-        selected = self.sources[0] if source is None else self.source(source)
-        return selected.glob()
+        return self.source(source).glob()

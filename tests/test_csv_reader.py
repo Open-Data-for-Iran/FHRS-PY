@@ -1,5 +1,6 @@
 import importlib.util
 import unittest
+from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 import fsspec
@@ -69,7 +70,9 @@ class CSVReaderChecks:
         self.assertEqual(self.ids(self.read(resource)), [1])
         self.assertEqual(self.ids(self.read(resource, source="backup")), [3])
 
-    def test_rejects_reading_resources_without_locations(self):
+    def test_missing_working_files_raise_file_not_found(self):
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
             DatasetManifest.model_validate(
                 {
@@ -79,12 +82,13 @@ class CSVReaderChecks:
                         "directory": {"type": "directory", "locations": []},
                     },
                 }
-            )
+            ),
+            working_directory=directory.name,
         )
         for key in ("file", "directory#member:*.csv"):
             with (
                 self.subTest(key=key),
-                self.assertRaisesRegex(ValueError, "no locations"),
+                self.assertRaises(FileNotFoundError),
             ):
                 self.read(dataset.resource(key))
 

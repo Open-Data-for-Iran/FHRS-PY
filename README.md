@@ -229,6 +229,12 @@ for source in dataset.resource("data").sources:
     print(source.to_fsspec())
 ```
 
+`resource.source()` selects the first declared location. If no locations are
+declared, it selects the local `working` source. Table `.load()` and directory
+member `.files()` follow the same rule. This does not check whether files exist:
+a missing selected source raises its normal read error rather than trying another
+source. Working paths are not added to manifest locations or `.sources`.
+
 Every runtime resource also supports an explicitly selected `working` source:
 
 ```python
@@ -251,7 +257,7 @@ to `runtime.Dataset(..., working_directory=...)`. Local resource paths use
 support the same selection through `member.source("working")` and
 `member.files(source="working")`. Selecting a working source creates no files
 or directories. It is excluded from `sources` and manifest dumps, so default
-reads still use declared locations. The storage name and location name `working`
+reads use the first declared location, or working storage when no locations are declared. The storage name and location name `working`
 are reserved and rejected during manifest validation. Use `working_directory`
 to configure the generated local storage.
 
@@ -310,7 +316,8 @@ path checks and mirror selection as declared members; files are listed only when
 calling `inline.source("local").glob()`.
 
 Use `member.files()` to return a sorted tuple of matching file `Source` objects
-from the first declared mirror, or `member.files(source="local")` to select a
+from the first declared mirror (or working storage if none are declared),
+or `member.files(source="local")` to select a
 location/storage by name. It refreshes matches on each call, returns `()` when
 none match, and propagates filesystem errors. It does not combine mirrors or
 automatically fall back to another one. Works for declared and inline members:
@@ -380,7 +387,8 @@ runtime constructor.
 
 Table references are read in declared order and concatenated using the chosen
 backend. Source selection and reader options are forwarded to each reference.
-The default selects each resource's first mirror. Unknown readers or backends
+The default selects each resource's first declared mirror, or working storage
+when no locations are declared. Unknown readers or backends
 raise `ValueError`. Add a reader instance with `READERS["format"] = MyReader()`;
 custom readers implement `BaseReader.read_pandas()` and `read_polars()`.
 
@@ -416,7 +424,7 @@ frame = reader.read_pandas(resource.member("household_size"), source="embedded")
 frame = reader.read_polars(resource.member("member:parts/*.csv"))
 ```
 
-It accepts file resources and members, reads the first mirror by default, and
+It accepts file resources and members, uses the default source selection, and
 concatenates member files in sorted path order. Bare directory resources require
 a member selecting the files; empty matches raise `FileNotFoundError`. Reader
 options are forwarded to the chosen backend (`sep` for pandas, `separator` for

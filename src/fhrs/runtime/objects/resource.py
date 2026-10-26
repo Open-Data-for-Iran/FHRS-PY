@@ -113,8 +113,12 @@ class Resource(BaseRuntime):
     def checksums(self) -> Checksums | None:
         return self.manifest.checksums
 
-    def source(self, name: str) -> Source:
-        """Select a declared source, or explicitly select local ``working`` data."""
+    def source(self, name: str | None = None) -> Source:
+        """Select a named source, defaulting to the first location or working data."""
+        if name is None:
+            if self.sources:
+                return self.sources[0]
+            name = "working"
         for location, source in zip(self.locations, self.sources, strict=True):
             if location.name == name:
                 return source

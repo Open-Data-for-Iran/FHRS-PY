@@ -1,5 +1,6 @@
 import unittest
 from dataclasses import FrozenInstanceError
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -26,7 +27,9 @@ class ResourceMemberTests(unittest.TestCase):
                     with self.assertRaises(KeyError):
                         resource.member("missing")
 
-    def test_members_without_locations_bind_but_cannot_list_files(self):
+    def test_members_without_locations_list_working_files(self):
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
             DatasetManifest.model_validate(
                 {
@@ -38,12 +41,12 @@ class ResourceMemberTests(unittest.TestCase):
                         }
                     },
                 }
-            )
+            ),
+            working_directory=directory.name,
         )
         member = dataset.resource("directory#rows")
         self.assertEqual(member.sources, ())
-        with self.assertRaisesRegex(ValueError, "no locations"):
-            member.files()
+        self.assertEqual(member.files(), ())
         with self.assertRaises(KeyError):
             member.files(source="missing")
 

@@ -88,7 +88,8 @@ class Table(BaseRuntime):
         """Load a DataFrame using the table reader and optional named source.
 
         Defaults to pandas. Source selects a location name, then a storage name;
-        omission uses the first declared mirror. Keyword arguments configure the
+        omission uses the first declared mirror, or working data when none exist.
+        Keyword arguments configure the
         registered reader. Results are concatenated in resource reference order.
         """
         from ..readers import READERS
