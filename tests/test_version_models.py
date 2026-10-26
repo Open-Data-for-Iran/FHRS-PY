@@ -11,10 +11,10 @@ class VersionModelTests(unittest.TestCase):
     def test_version_declarations_survive_manifest_round_trip(self):
         entries = {"1.0@001": {"manifest": "releases/001/manifest.yaml"}}
         versions = {"entries": entries, "indexes": ["versions/main.yaml"]}
-        index = manifest.VersionIndex.model_validate(entries)
+        index = manifest.models.VersionIndex.model_validate(entries)
         self.assertEqual(index.model_dump(), entries)
-        self.assertIsInstance(index.root["1.0@001"], manifest.VersionReference)
-        dataset = manifest.Dataset(name="survey", versions=versions)
+        self.assertIsInstance(index.root["1.0@001"], manifest.models.VersionReference)
+        dataset = manifest.models.Dataset(name="survey", versions=versions)
         self.assertEqual(dataset.versions.entries, index)
         for format in ("yaml", "json"):
             with (
@@ -26,11 +26,13 @@ class VersionModelTests(unittest.TestCase):
                 self.assertEqual(loaded.versions.model_dump(), versions)
 
     def test_defaults_are_empty_and_independent(self):
-        self.assertIsNone(manifest.Dataset(name="survey").versions)
-        first = manifest.Versions()
-        second = manifest.Versions()
+        self.assertIsNone(manifest.models.Dataset(name="survey").versions)
+        first = manifest.models.Versions()
+        second = manifest.models.Versions()
         self.assertEqual(first.model_dump(), {"entries": {}, "indexes": []})
-        first.entries.root["1.0@001"] = manifest.VersionReference(manifest="one.yaml")
+        first.entries.root["1.0@001"] = manifest.models.VersionReference(
+            manifest="one.yaml"
+        )
         first.indexes.append("index.yaml")
         self.assertEqual(second.model_dump(), {"entries": {}, "indexes": []})
 
@@ -41,4 +43,4 @@ class VersionModelTests(unittest.TestCase):
             {"unknown": True},
         ):
             with self.subTest(value=value), self.assertRaises(ValidationError):
-                manifest.Versions.model_validate(value)
+                manifest.models.Versions.model_validate(value)

@@ -29,7 +29,7 @@ class ParquetReaderChecks:
             self.fs.pipe(f"{self.root}/{name}.parquet", stream.getvalue())
         self.addCleanup(self.fs.rm, self.root, recursive=True)
         self.dataset = runtime.Dataset(
-            manifest.Dataset.model_validate(
+            manifest.models.Dataset.model_validate(
                 {
                     "name": "survey",
                     "resources": {
@@ -94,7 +94,7 @@ class ParquetReaderChecks:
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
-            manifest.Dataset(name="empty", resources={"rows": {}}),
+            manifest.models.Dataset(name="empty", resources={"rows": {}}),
             working_directory=directory.name,
         )
         with self.assertRaises(FileNotFoundError):

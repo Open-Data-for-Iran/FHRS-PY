@@ -7,7 +7,7 @@ from fhrs import manifest, runtime
 
 class AutoTableTests(unittest.TestCase):
     def test_infers_tables_without_mutating_manifest_or_accessing_files(self):
-        declaration = manifest.Dataset.model_validate(
+        declaration = manifest.models.Dataset.model_validate(
             {
                 "name": "survey",
                 "resources": {
@@ -40,7 +40,7 @@ class AutoTableTests(unittest.TestCase):
 
     def test_explicit_tables_override_inferred_tables(self):
         dataset = runtime.Dataset(
-            manifest.Dataset.model_validate(
+            manifest.models.Dataset.model_validate(
                 {
                     "name": "survey",
                     "resources": {"rows": {"suffix": ".csv"}, "other": {}},
@@ -67,7 +67,9 @@ class AutoTableTests(unittest.TestCase):
             self.skipTest("pandas is not installed")
         with TemporaryDirectory() as directory:
             dataset = runtime.ManagedDataset(
-                manifest.Dataset(name="survey", resources={"rows": {"suffix": ".csv"}}),
+                manifest.models.Dataset(
+                    name="survey", resources={"rows": {"suffix": ".csv"}}
+                ),
                 working_directory=Path(directory),
             )
             dataset.resource("rows").put(b"id,value\n1,10\n")

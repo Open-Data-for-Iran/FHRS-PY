@@ -106,7 +106,7 @@ removing its target; links escaping the resource are rejected.
 
 For package names, this imports `<package_name>.fhrs_setup.dataset` from an
 installed or otherwise importable Python package and returns a runtime dataset.
-The declaration must be a `fhrs.manifest.Dataset`. Hyphens in package names are
+The declaration must be a `fhrs.manifest.models.Dataset`. Hyphens in package names are
 accepted as underscores, so `sci-dataset-list` works too. Relative resource paths,
 embedded storage, and collection manifest references resolve beside
 `fhrs_setup.py`. Loading copies the declaration, leaving the package's dataset
@@ -510,7 +510,7 @@ Datasets also accept optional `schema_version` and `release` fields, exposed
 on runtime datasets under the same names:
 
 ```python
-declaration = fhrs.manifest.Dataset(
+declaration = fhrs.manifest.models.Dataset(
     name="survey", schema_version="2.3.1", release="2026-10-26.1"
 )
 dataset = fhrs.runtime.Dataset(declaration)

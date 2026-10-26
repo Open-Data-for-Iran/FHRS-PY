@@ -11,7 +11,7 @@ class DatasetVersionTests(unittest.TestCase):
     def test_combined_version_is_computed_and_serialized(self):
         for status, suffix in (("in_development", "~dev"), ("published", "")):
             with self.subTest(status=status):
-                declaration = manifest.Dataset(
+                declaration = manifest.models.Dataset(
                     name="survey",
                     schema_version="2.3.1",
                     release="2026-10-26.1",
@@ -36,7 +36,7 @@ class DatasetVersionTests(unittest.TestCase):
 
     def test_combined_version_requires_both_components(self):
         for fields in ({}, {"schema_version": "2.3.1"}, {"release": "1"}):
-            declaration = manifest.Dataset(name="survey", **fields)
+            declaration = manifest.models.Dataset(name="survey", **fields)
             self.assertIsNone(declaration.version)
             self.assertIsNone(runtime.Dataset(declaration).version)
 
@@ -47,10 +47,10 @@ class DatasetVersionTests(unittest.TestCase):
                     self.subTest(field=field, value=value),
                     self.assertRaises(ValidationError),
                 ):
-                    manifest.Dataset(name="survey", **{field: value})
+                    manifest.models.Dataset(name="survey", **{field: value})
 
     def test_optional_versions_default_to_none_and_are_not_dumped(self):
-        declaration = manifest.Dataset(name="survey")
+        declaration = manifest.models.Dataset(name="survey")
         dataset = runtime.Dataset(declaration)
         self.assertIsNone(dataset.schema_version)
         self.assertIsNone(dataset.release)
@@ -63,7 +63,7 @@ class DatasetVersionTests(unittest.TestCase):
         self.assertNotIn("schema_version", declaration.model_dump(exclude_none=True))
 
     def test_versions_survive_yaml_and_json_round_trips(self):
-        declaration = manifest.Dataset(
+        declaration = manifest.models.Dataset(
             name="survey", schema_version="2.1", release="2026-10-20.1"
         )
         dataset = runtime.Dataset(declaration)
@@ -83,7 +83,7 @@ class DatasetVersionTests(unittest.TestCase):
                     self.subTest(field=field, value=value),
                     self.assertRaises(ValidationError),
                 ):
-                    manifest.Dataset(name="survey", **{field: value})
+                    manifest.models.Dataset(name="survey", **{field: value})
 
 
 if __name__ == "__main__":

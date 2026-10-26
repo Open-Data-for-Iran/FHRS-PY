@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import fsspec
 from pydantic import ValidationError
 
-from fhrs.manifest import Collection, Dataset
+from fhrs.manifest.models import Collection, Dataset
 from fhrs.manifest.models.storage import (
     BaseStorage,
     EmbeddedStorage,

@@ -5,9 +5,9 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Literal, overload
 
-from ..manifest import Dataset as DatasetManifest
 from ..manifest import load as read_manifest
 from ..manifest.loader import _resolve_collection
+from ..manifest.models import Dataset as DatasetManifest
 from .managed import ManagedDataset
 from .objects import Dataset
 

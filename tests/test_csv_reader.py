@@ -6,8 +6,8 @@ from uuid import uuid4
 import fsspec
 
 from fhrs import runtime
-from fhrs.manifest import Dataset as DatasetManifest
-from fhrs.manifest import Table as TableManifest
+from fhrs.manifest.models import Dataset as DatasetManifest
+from fhrs.manifest.models import Table as TableManifest
 from fhrs.runtime.readers import READERS, CSVReader
 
 

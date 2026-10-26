@@ -20,7 +20,7 @@ class WorkingDefaultChecks:
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name) / "working"
-        self.declaration = manifest.Dataset.model_validate(
+        self.declaration = manifest.models.Dataset.model_validate(
             {
                 "name": "survey",
                 "resources": {
@@ -81,7 +81,7 @@ class WorkingDefaultChecks:
         uri = f"memory://working-default-{uuid4().hex}"
         memory.pipe(uri, b"id\n9\n")
         self.addCleanup(memory.rm, uri)
-        declaration = manifest.Dataset(
+        declaration = manifest.models.Dataset(
             name="survey",
             resources={
                 "rows": {

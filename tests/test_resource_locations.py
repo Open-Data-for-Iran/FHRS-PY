@@ -8,9 +8,9 @@ from fsspec.implementations.github import GithubFileSystem
 from pydantic import ValidationError
 
 from fhrs import runtime
-from fhrs.manifest import Dataset as DatasetManifest
-from fhrs.manifest import Location
-from fhrs.manifest import Resource as ResourceManifest
+from fhrs.manifest.models import Dataset as DatasetManifest
+from fhrs.manifest.models import Location
+from fhrs.manifest.models import Resource as ResourceManifest
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 

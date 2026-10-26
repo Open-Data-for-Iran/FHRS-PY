@@ -33,7 +33,7 @@ class PackageLoaderTests(unittest.TestCase):
 
     def test_loads_package_and_binds_relative_resources_and_collections(self):
         self.write_setup(
-            "from fhrs.manifest import Dataset, Resource, Location, ManifestReference\n"
+            "from fhrs.manifest.models import Dataset, Resource, Location, ManifestReference\n"
             "dataset = Dataset(name='survey', resources={\n"
             "    'xml': Resource(suffix='.xml', locations=[Location(uri='original.xml')])\n"
             "}, collections={'wave': ManifestReference(manifest='wave.yaml')})\n"
@@ -67,7 +67,7 @@ class PackageLoaderTests(unittest.TestCase):
         from fhrs.runtime.loader import load_package
 
         self.write_setup(
-            "from fhrs.manifest import Dataset\ndataset = Dataset(name='survey')\n"
+            "from fhrs.manifest.models import Dataset\ndataset = Dataset(name='survey')\n"
         )
         dataset = load_package(self.package_name)
         self.assertIsInstance(dataset, runtime.Dataset)
@@ -76,7 +76,7 @@ class PackageLoaderTests(unittest.TestCase):
 
     def test_custom_setup_module(self):
         (self.package / "custom_setup.py").write_text(
-            "from fhrs.manifest import Dataset\ndataset = Dataset(name='custom')\n",
+            "from fhrs.manifest.models import Dataset\ndataset = Dataset(name='custom')\n",
             encoding="utf-8",
         )
         for load in (fhrs.load, runtime.load_package):
@@ -107,7 +107,7 @@ class PackageLoaderTests(unittest.TestCase):
             with self.subTest(declaration=declaration):
                 self.clear_modules()
                 self.write_setup(
-                    "from fhrs.manifest import Dataset\n"
+                    "from fhrs.manifest.models import Dataset\n"
                     "dataset = Dataset(name='survey')\n"
                     f"{declaration}\n"
                 )

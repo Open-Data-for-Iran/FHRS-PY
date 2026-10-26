@@ -17,7 +17,7 @@ class ManagedPutTests(unittest.TestCase):
         self.root = Path(directory.name)
         self.work = self.root / "work"
         self.dataset = runtime.ManagedDataset(
-            manifest.Dataset.model_validate(
+            manifest.models.Dataset.model_validate(
                 {
                     "name": "survey",
                     "resources": {
@@ -149,7 +149,7 @@ class ManagedPutTests(unittest.TestCase):
 
     def test_rejects_destination_outside_working_storage(self):
         dataset = runtime.ManagedDataset(
-            manifest.Dataset(name="survey", resources={"../outside": {}}),
+            manifest.models.Dataset(name="survey", resources={"../outside": {}}),
             working_directory=self.work,
         )
         with self.assertRaises(ValueError):

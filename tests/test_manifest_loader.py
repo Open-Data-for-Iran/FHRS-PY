@@ -8,8 +8,9 @@ import fsspec
 from pydantic import ValidationError
 from ruamel.yaml.constructor import DuplicateKeyError
 
-from fhrs.manifest import BaseCollection, Collection, Dataset, load
+from fhrs.manifest import load
 from fhrs.manifest.loader import _load_internal_collection, _resolve_collection
+from fhrs.manifest.models import BaseCollection, Collection, Dataset
 
 
 class ManifestLoaderTests(unittest.TestCase):

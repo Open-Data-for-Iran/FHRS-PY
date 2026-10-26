@@ -7,7 +7,7 @@ from uuid import uuid4
 import fsspec
 
 from fhrs import runtime
-from fhrs.manifest import Dataset as DatasetManifest
+from fhrs.manifest.models import Dataset as DatasetManifest
 
 
 class ResourceMemberTests(unittest.TestCase):

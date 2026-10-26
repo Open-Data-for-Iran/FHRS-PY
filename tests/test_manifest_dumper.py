@@ -16,7 +16,7 @@ class ManifestWriterTests(unittest.TestCase):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.dataset = manifest.Dataset(
+        self.dataset = manifest.models.Dataset(
             name="survey",
             title="گزارش",
             resources={
@@ -48,13 +48,13 @@ class ManifestWriterTests(unittest.TestCase):
         return YAML(typ="safe").load((self.root / path).read_text(encoding="utf-8"))
 
     def test_dump_uses_model_field_order_including_nested_fields(self):
-        dataset = manifest.Dataset(
+        dataset = manifest.models.Dataset(
             name="survey",
             collections={"z": {"name": "wave", "title": "Wave"}, "a": {}},
             resources={
-                "z": manifest.Resource(
+                "z": manifest.models.Resource(
                     suffix=".csv",
-                    locations=[manifest.Location(name="web", uri="data.csv")],
+                    locations=[manifest.models.Location(name="web", uri="data.csv")],
                     type="file",
                 ),
                 "a": {},
@@ -167,7 +167,7 @@ class ManifestWriterTests(unittest.TestCase):
                 )
 
     def test_storage_alias_uses_canonical_model_field_order(self):
-        dataset = manifest.Dataset(
+        dataset = manifest.models.Dataset(
             name="survey",
             storages={"web": {"base_url": "https://example.org/", "type": "http"}},
         )
@@ -179,7 +179,7 @@ class ManifestWriterTests(unittest.TestCase):
         self.assertNotIn("base_url", storage)
 
     def test_members_omit_none_and_preserve_explicit_empty_directory_mapping(self):
-        dataset = manifest.Dataset(
+        dataset = manifest.models.Dataset(
             name="survey",
             resources={
                 "file": {},
@@ -226,7 +226,7 @@ class ManifestWriterTests(unittest.TestCase):
         filesystem = fsspec.filesystem("memory")
         filesystem.makedirs(destination)
         self.addCleanup(filesystem.rm, destination, recursive=True)
-        dataset = manifest.Dataset(
+        dataset = manifest.models.Dataset(
             name="survey",
             dump_options={
                 "destination": destination,
@@ -407,7 +407,7 @@ class ManifestWriterTests(unittest.TestCase):
     def test_unsupported_format_and_unresolved_references_fail_before_writing(self):
         with self.assertRaises(ValueError):
             manifest.dump(self.dataset, self.root / "output", format="toml")
-        unresolved = manifest.Dataset(
+        unresolved = manifest.models.Dataset(
             name="survey", collections={"wave": {"manifest": "wave.yaml"}}
         )
         with self.assertRaises(TypeError):

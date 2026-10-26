@@ -12,7 +12,7 @@ class ManagedAddTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
         self.dataset = runtime.ManagedDataset(
-            manifest.Dataset.model_validate(
+            manifest.models.Dataset.model_validate(
                 {
                     "name": "survey",
                     "resources": {"pages": {"type": "directory"}, "file": {}},

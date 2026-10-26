@@ -4,10 +4,10 @@ from dataclasses import FrozenInstanceError
 from pydantic import ValidationError
 
 from fhrs import runtime
-from fhrs.manifest import Collection as CollectionManifest
-from fhrs.manifest import Dataset as DatasetManifest
-from fhrs.manifest import ManifestReference
-from fhrs.manifest import Table as TableManifest
+from fhrs.manifest.models import Collection as CollectionManifest
+from fhrs.manifest.models import Dataset as DatasetManifest
+from fhrs.manifest.models import ManifestReference
+from fhrs.manifest.models import Table as TableManifest
 
 
 class RuntimeCollectionTests(unittest.TestCase):

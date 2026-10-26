@@ -5,8 +5,8 @@ from uuid import uuid4
 import fsspec
 
 from fhrs import runtime
-from fhrs.manifest import Dataset as DatasetManifest
 from fhrs.manifest import load as load_manifest
+from fhrs.manifest.models import Dataset as DatasetManifest
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 

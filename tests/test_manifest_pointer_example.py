@@ -1,7 +1,8 @@
 import unittest
 from pathlib import Path
 
-from fhrs.manifest import Collection, load
+from fhrs.manifest import load
+from fhrs.manifest.models import Collection
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "manifest-pointers"
 

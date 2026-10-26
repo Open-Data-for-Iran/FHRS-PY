@@ -5,12 +5,13 @@ from uuid import uuid4
 
 import fsspec
 
-from fhrs.manifest import Collection, ManifestReference, load
+from fhrs.manifest import load
 from fhrs.manifest.loader import (
     _load_internal_collection,
     _resolve_collection,
     _resolve_collection_child,
 )
+from fhrs.manifest.models import Collection, ManifestReference
 
 
 class ManifestReferenceTests(unittest.TestCase):

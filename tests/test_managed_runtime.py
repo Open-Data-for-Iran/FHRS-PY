@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import fhrs
 from fhrs import runtime
-from fhrs.manifest import Dataset as DatasetManifest
+from fhrs.manifest.models import Dataset as DatasetManifest
 
 
 class ManagedRuntimeTests(unittest.TestCase):
