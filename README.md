@@ -244,6 +244,18 @@ working = dataset.storage("working")  # Also available in dataset.storages.
 local = working.resolve("data")
 ```
 
+`resource.working_path` is a convenience property returning the local working
+address as a `pathlib.Path`, for both ordinary and managed resources:
+
+```python
+path = dataset.resource("data").working_path
+```
+
+It works for files and directories, includes the declared file suffix and nested
+collection path, and always selects working storage even when the resource has
+remote locations. Access does not open resource contents or create anything;
+working-storage path checks still apply.
+
 The working directory defaults to `data/<dataset.name>` under the current
 directory. Dataset initialization replaces `<dataset.name>` with the manifest's
 name in any supplied path and resolves it to an absolute path.

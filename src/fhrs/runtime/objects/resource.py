@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Literal
 
 from ...manifest.models.resource import Checksums, Location
@@ -112,6 +113,15 @@ class Resource(BaseRuntime):
     @property
     def checksums(self) -> Checksums | None:
         return self.manifest.checksums
+
+    @property
+    def working_path(self) -> Path:
+        """Local working path, without opening data or creating files/directories."""
+        return Path(
+            self.dataset.storage("working")
+            .resolve(self.key + (self.suffix or ""))
+            .urlpath
+        )
 
     def source(self, name: str | None = None) -> Source:
         """Select a named source, defaulting to the first location or working data."""

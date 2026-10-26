@@ -26,6 +26,62 @@ class WorkingSourceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             storage.resolve("../outside")
 
+    def test_working_path_is_local_for_files_directories_and_managed_resources(self):
+        declaration = manifest.Dataset(
+            name="survey",
+            collections={
+                "wave": {
+                    "resources": {
+                        "report": {
+                            "suffix": ".csv",
+                            "locations": [{"uri": "memory://remote/report.csv"}],
+                        },
+                        "parts": {"type": "directory"},
+                    }
+                }
+            },
+        )
+        before = declaration.model_dump()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "working"
+            for dataset_type in (runtime.Dataset, runtime.ManagedDataset):
+                with self.subTest(dataset_type=dataset_type):
+                    dataset = dataset_type(declaration, working_directory=root)
+                    report = dataset.resource("wave/report")
+                    parts = dataset.resource("wave/parts")
+                    self.assertIsInstance(report.working_path, Path)
+                    self.assertEqual(report.working_path, root / "wave/report.csv")
+                    self.assertEqual(parts.working_path, root / "wave/parts")
+                    self.assertEqual(
+                        report.working_path, Path(report.source("working").urlpath)
+                    )
+                    self.assertEqual(
+                        report.source().urlpath, "memory://remote/report.csv"
+                    )
+                    self.assertFalse(root.exists())
+        self.assertEqual(declaration.model_dump(), before)
+
+    def test_working_path_ignores_declared_working_location(self):
+        declaration = manifest.Dataset(
+            name="survey",
+            resources={
+                "report": {
+                    "suffix": ".csv",
+                    "locations": [{"storage": "working", "uri": "archive.csv"}],
+                }
+            },
+        )
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "archive.csv"
+            archive.write_bytes(b"original")
+            dataset = runtime.ManagedDataset(declaration, working_directory=root)
+            report = dataset.resource("report")
+            self.assertEqual(report.working_path, root / "report.csv")
+            self.assertEqual(report.put(b"new", overwrite=True), root / "report.csv")
+            self.assertEqual((root / "report.csv").read_bytes(), b"new")
+            self.assertEqual(archive.read_bytes(), b"original")
+
     def test_default_directory_is_captured_when_dataset_is_created(self):
         dataset = runtime.Dataset(
             manifest.Dataset(name="survey", resources={"report": {"suffix": ".pdf"}})
@@ -130,3 +186,5 @@ class WorkingSourceTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             dataset.resources["../outside"].source("working")
+        with self.assertRaises(ValueError):
+            _ = dataset.resources["../outside"].working_path

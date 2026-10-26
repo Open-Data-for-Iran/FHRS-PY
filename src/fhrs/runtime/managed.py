@@ -53,11 +53,7 @@ class ManagedResource(Resource):
         directory publication failures restore the original when possible.
         Manifest declarations are never modified.
         """
-        destination = Path(
-            self.dataset.storage("working")
-            .resolve(self.key + (self.suffix or ""))
-            .urlpath
-        )
+        destination = self.working_path
         if not overwrite and destination.exists():
             raise FileExistsError(destination)
 
@@ -109,7 +105,7 @@ class ManagedResource(Resource):
             raise ValueError(
                 f"Expected a relative file path inside the resource: {path!r}"
             )
-        directory = Path(self.source("working").urlpath).resolve()
+        directory = self.working_path.resolve()
         destination = directory / path
         if not destination.resolve().is_relative_to(directory):
             raise ValueError(f"File path escapes its directory resource: {path!r}")
