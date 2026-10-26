@@ -13,3 +13,4 @@ class Table(BaseModel, extra="forbid"):
         min_length=1, description="Reader name, such as csv, parquet, or excel."
     )
     title: str | None = Field(default=None, min_length=1)
+    description: str | None = None

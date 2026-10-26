@@ -50,6 +50,10 @@ class Table(BaseRuntime):
         return self.manifest.title
 
     @property
+    def description(self) -> str | None:
+        return self.manifest.description
+
+    @property
     def dataset(self) -> Dataset:
         """The dataset owning this table, derived from its parent."""
         from .collection import Collection

@@ -93,6 +93,14 @@ class Resource(BaseRuntime):
         return "/".join(reversed(parts))
 
     @property
+    def title(self) -> str | None:
+        return self.manifest.title
+
+    @property
+    def description(self) -> str | None:
+        return self.manifest.description
+
+    @property
     def resource_type(self) -> Literal["file", "directory"]:
         return self.manifest.type
 

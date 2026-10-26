@@ -45,6 +45,8 @@ class Resource(BaseModel, extra="forbid"):
         dict[Annotated[str, Field(min_length=1)], Annotated[str, Field(min_length=1)]]
         | None
     ) = None
+    title: str | None = Field(default=None, min_length=1)
+    description: str | None = None
 
     @model_validator(mode="after")
     def check_resource(self) -> Self:
