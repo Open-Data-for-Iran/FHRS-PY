@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, computed_field, field_validator, model_va
 from ._base import Name
 from .collection import BaseCollection
 from .storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
+from .version import Versions
 
 
 class DumpOptions(BaseModel, extra="forbid"):
@@ -31,6 +32,7 @@ class Dataset(BaseCollection):
         "schema_version",
         "release",
         "status",
+        "versions",
         "storages",
         "resources",
         "tables",
@@ -42,6 +44,7 @@ class Dataset(BaseCollection):
     schema_version: str | None = Field(default=None, min_length=1, pattern=r"\S")
     release: str | None = Field(default=None, min_length=1, pattern=r"\S")
     status: Literal["in_development", "published"] = "in_development"
+    versions: Versions | None = None
     dump_options: DumpOptions = Field(default_factory=DumpOptions, exclude=True)
     storages: dict[str, S3Storage | EmbeddedStorage | HTTPStorage | BaseStorage] = (
         Field(default_factory=dict)

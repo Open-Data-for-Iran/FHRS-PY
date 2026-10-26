@@ -8,6 +8,7 @@ from .models.dataset import Dataset, DumpOptions
 from .models.resource import Checksums, Location, Resource
 from .models.storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
 from .models.table import Table
+from .models.version import VersionIndex, VersionReference, Versions
 
 __all__ = [
     "BaseCollection",
@@ -23,6 +24,9 @@ __all__ = [
     "Resource",
     "S3Storage",
     "Table",
+    "VersionIndex",
+    "VersionReference",
+    "Versions",
     "discover",
     "dump",
     "load",

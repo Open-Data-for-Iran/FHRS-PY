@@ -5,6 +5,7 @@ from .dataset import Dataset, DumpOptions
 from .resource import Checksums, Location, Resource
 from .storage import BaseStorage, EmbeddedStorage, HTTPStorage, S3Storage
 from .table import Table
+from .version import VersionIndex, VersionReference, Versions
 
 __all__ = [
     "BaseCollection",
@@ -20,4 +21,7 @@ __all__ = [
     "Resource",
     "S3Storage",
     "Table",
+    "VersionIndex",
+    "VersionReference",
+    "Versions",
 ]
