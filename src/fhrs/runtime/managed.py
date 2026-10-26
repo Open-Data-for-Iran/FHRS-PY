@@ -68,6 +68,53 @@ class ManagedResource(Resource):
 
         return put_file(data, destination, overwrite=overwrite)
 
+    def add(
+        self,
+        path: str,
+        data: str | os.PathLike[str] | bytes | BinaryIO,
+        *,
+        overwrite: bool = False,
+    ) -> Path:
+        """Write one file inside a directory resource's working storage.
+
+        Accept a relative file path using forward slashes, without glob patterns
+        or traversal. Create parent directories and preserve other files.
+        Inputs and overwrite behavior match put(); manifests are unchanged.
+        """
+        if self.resource_type != "directory":
+            raise TypeError("add() requires a directory resource")
+        return put_file(data, self._directory_file_path(path), overwrite=overwrite)
+
+    def remove(self, path: str) -> None:
+        """Remove one file from a directory resource's working storage.
+
+        Use the same relative paths as add(). Missing files raise
+        FileNotFoundError; directories raise IsADirectoryError. Other files,
+        parent directories, and manifest declarations are preserved.
+        """
+        if self.resource_type != "directory":
+            raise TypeError("remove() requires a directory resource")
+        destination = self._directory_file_path(path)
+        if destination.is_dir():
+            raise IsADirectoryError(destination)
+        destination.unlink()
+
+    def _directory_file_path(self, path: str) -> Path:
+        """Validate a single file path within this resource's working directory."""
+        if (
+            not path
+            or any(part in ("", ".", "..") for part in path.split("/"))
+            or any(char in path for char in "\\:\0*?[]")
+        ):
+            raise ValueError(
+                f"Expected a relative file path inside the resource: {path!r}"
+            )
+        directory = Path(self.source("working").urlpath).resolve()
+        destination = directory / path
+        if not destination.resolve().is_relative_to(directory):
+            raise ValueError(f"File path escapes its directory resource: {path!r}")
+        return destination
+
 
 class ManagedTable(Table):
     """A table in a managed dataset."""

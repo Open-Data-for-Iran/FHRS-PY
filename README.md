@@ -73,6 +73,37 @@ The method does not change manifest locations, size, or checksums. The name
 `working` is reserved for runtime storage and cannot be declared as a storage
 name or a location name.
 
+
+Use `ManagedResource.add(path, data, *, overwrite=False)` to write one file inside
+an existing or new directory resource in working storage:
+
+```python
+pages = dataset.resource("dataset_pages")
+path = pages.add("20797.html", response.content)
+path = pages.add("nested/20798.html", "downloaded_page.html", overwrite=True)
+```
+
+`add()` works only on directory resources; file resources raise `TypeError`.
+The destination path uses forward slashes and must identify a file inside the
+resource. Absolute paths, traversal, glob patterns, and symlinks escaping the
+resource are rejected. Parent directories are created automatically. Inputs,
+stream ownership, staged writes, return values, and explicit overwrite behavior
+match file `put()`. Other files and the manifest are preserved.
+
+
+Use `ManagedResource.remove(path)` to remove a single file from a directory
+resource's working storage:
+
+```python
+pages.remove("20797.html")
+```
+
+`remove()` uses the same path restrictions as `add()` and works only on directory
+resources. It returns `None`, raises `FileNotFoundError` for missing files, and
+rejects directories with `IsADirectoryError`. Other files, parent directories,
+and the manifest are preserved. An internal file symlink is unlinked without
+removing its target; links escaping the resource are rejected.
+
 For package names, this imports `<package_name>.fhrs_setup.dataset` from an
 installed or otherwise importable Python package and returns a runtime dataset.
 The declaration must be a `fhrs.manifest.Dataset`. Hyphens in package names are
