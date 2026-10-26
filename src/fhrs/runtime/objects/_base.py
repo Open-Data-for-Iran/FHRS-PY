@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from ...manifest.models.collection import Collection as CollectionManifest
 from ...manifest.models.dataset import Dataset as DatasetManifest
+from ...manifest.models.table import Table as TableManifest
 
 if TYPE_CHECKING:
     from .collection import Collection
@@ -54,11 +55,21 @@ class BaseCollection(BaseRuntime, ABC):
                 for name, manifest in self.manifest.resources.items()
             },
         )
+        tables = {
+            name: TableManifest(
+                resource=name,
+                reader=resource.suffix.lower()[1:],  # pyright: ignore[reportOptionalMemberAccess]
+            )
+            for name, resource in self.resources.items()
+            if resource.resource_type == "file"
+            and (resource.suffix or "").lower() in (".csv", ".parquet")
+        }
+        tables.update(self.manifest.tables)
         self._set_mapping(
             "tables",
             {
                 name: dataset._table_type(manifest, name=name, parent=self)
-                for name, manifest in self.manifest.tables.items()
+                for name, manifest in tables.items()
             },
         )
         collections = {}

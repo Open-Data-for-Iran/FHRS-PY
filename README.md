@@ -384,6 +384,20 @@ The default selects each resource's first mirror. Unknown readers or backends
 raise `ValueError`. Add a reader instance with `READERS["format"] = MyReader()`;
 custom readers implement `BaseReader.read_pandas()` and `read_polars()`.
 
+File resources with a declared `.csv` or `.parquet` suffix automatically get a
+runtime table with the same name and matching reader. Suffix matching ignores
+case and applies within nested collections, for ordinary and managed datasets.
+Explicit tables override automatic tables with the same name. Directory resources,
+compressed suffixes such as `.csv.gz`, and resources without a supported declared
+suffix do not get automatic tables; filenames in locations are not inspected.
+Automatic tables appear in `.tables` but are not added to saved manifests.
+Binding tables performs no file access or column-schema inference.
+
+```python
+# resources={"rss_catalog": Resource(suffix=".csv")}
+frame = dataset.table("rss_catalog").load(source="working")
+```
+
 The Parquet reader supports pandas and Polars, named sources, column selection
 with `columns=[...]`, and directory members selecting Parquet files. Like CSV,
 member files are read in sorted order and multiple resources are concatenated in
