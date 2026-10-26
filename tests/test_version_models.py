@@ -8,11 +8,24 @@ from fhrs import manifest
 
 
 class VersionModelTests(unittest.TestCase):
+    def test_version_reference_accepts_storage_options(self):
+        reference = manifest.models.VersionReference(
+            manifest="memory://archive/fixed.json",
+            storage_options={"token": "test"},
+        )
+        self.assertEqual(reference.storage_options, {"token": "test"})
+        self.assertIsNone(
+            manifest.models.VersionReference(manifest="one.yaml").storage_options
+        )
+        for fields in ({"storage": "archive"}, {"storage_options": "archive"}):
+            with self.subTest(fields=fields), self.assertRaises(ValidationError):
+                manifest.models.VersionReference(manifest="one.yaml", **fields)
+
     def test_version_declarations_survive_manifest_round_trip(self):
         entries = {"1.0@001": {"manifest": "releases/001/manifest.yaml"}}
         versions = {"entries": entries, "indexes": ["versions/main.yaml"]}
         index = manifest.models.VersionIndex.model_validate(entries)
-        self.assertEqual(index.model_dump(), entries)
+        self.assertEqual(index.model_dump(exclude_none=True), entries)
         self.assertIsInstance(index.root["1.0@001"], manifest.models.VersionReference)
         dataset = manifest.models.Dataset(name="survey", versions=versions)
         self.assertEqual(dataset.versions.entries, index)
@@ -23,7 +36,9 @@ class VersionModelTests(unittest.TestCase):
             ):
                 manifest.dump(dataset, directory, format=format)
                 loaded = manifest.load(Path(directory) / f"manifest.{format}")
-                self.assertEqual(loaded.versions.model_dump(), versions)
+                self.assertEqual(
+                    loaded.versions.model_dump(exclude_none=True), versions
+                )
 
     def test_defaults_are_empty_and_independent(self):
         self.assertIsNone(manifest.models.Dataset(name="survey").versions)

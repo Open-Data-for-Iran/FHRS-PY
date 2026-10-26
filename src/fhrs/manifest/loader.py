@@ -13,19 +13,83 @@ from ruamel.yaml import YAML
 from .discovery import discover
 from .models.collection import BaseCollection, Collection
 from .models.dataset import Dataset
+from .models.version import VersionIndex, VersionReference
 
 
 def load(
     urlpath: str | os.PathLike[str],
     *,
+    version: str | None = None,
     storage_options: dict[str, Any] | None = None,
 ) -> Dataset:
     """Load a manifest file or discover one in a directory through fsspec.
 
     Returns a validated declaration with all collection references loaded.
+    Version indexes are read only when selecting an explicit version.
     """
     urlpath = discover(urlpath, storage_options=storage_options)
-    return _load_dataset(urlpath, storage_options=storage_options, resolve=True)
+    dataset = _load_dataset(urlpath, storage_options=storage_options)
+    if version is not None:
+        return _load_version(dataset, version)
+    return _resolve_collection(dataset)
+
+
+def load_versions(
+    urlpath: str | os.PathLike[str],
+    *,
+    storage_options: dict[str, Any] | None = None,
+) -> VersionIndex:
+    """Combine inline entries and external indexes without opening version manifests.
+
+    Reference paths retain their spelling relative to their declaring files.
+    Duplicate version identifiers raise ValueError, including identical entries.
+    """
+    urlpath = discover(urlpath, storage_options=storage_options)
+    dataset = _load_dataset(urlpath, storage_options=storage_options)
+    return VersionIndex(
+        {name: ref for name, (ref, _) in _read_versions(dataset).items()}
+    )
+
+
+def _read_versions(dataset: Dataset) -> dict[str, tuple[VersionReference, str]]:
+    """Collect references with their declaring paths, without fetching versions."""
+    if dataset.versions is None:
+        return {}
+    storage = dataset._storage
+    urlpath = storage["urlpath"]
+    entries = {
+        name: (reference, urlpath)
+        for name, reference in dataset.versions.entries.root.items()
+    }
+    for path in dataset.versions.indexes:
+        index_path = _relative_urlpath(urlpath, path)
+        index = VersionIndex.model_validate(
+            _read_manifest(index_path, storage["storage_options"])
+        )
+        for name, reference in index.root.items():
+            if name in entries:
+                raise ValueError(f"Duplicate version identifier: {name!r}")
+            entries[name] = (reference, index_path)
+    return entries
+
+
+def _load_version(dataset: Dataset, version: str) -> Dataset:
+    """Load only the selected manifest using its fsspec connection options."""
+    reference, declaring_path = _read_versions(dataset)[version]
+    direct = (
+        fsspec.core.split_protocol(reference.manifest)[0] is not None
+        or os.path.isabs(reference.manifest)
+        or "protocol" in (reference.storage_options or {})
+    )
+    urlpath = (
+        reference.manifest
+        if direct
+        else _relative_urlpath(declaring_path, reference.manifest)
+    )
+    options = reference.storage_options
+    if options is None:
+        options = {} if direct else dataset._storage["storage_options"]
+    return _load_dataset(urlpath, storage_options=options, resolve=True)
 
 
 def _load_dataset(

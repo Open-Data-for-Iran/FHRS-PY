@@ -12,6 +12,7 @@ def load(
     source: str | os.PathLike[str],
     *,
     manage: Literal[True],
+    version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
     working_directory: str | os.PathLike[str] = "data/<dataset.name>",
@@ -23,6 +24,7 @@ def load(
     source: str | os.PathLike[str],
     *,
     manage: bool = False,
+    version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
     working_directory: str | os.PathLike[str] = "data/<dataset.name>",
@@ -33,6 +35,7 @@ def load(
     source: str | os.PathLike[str],
     *,
     manage: bool = False,
+    version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
     working_directory: str | os.PathLike[str] = "data/<dataset.name>",
@@ -58,6 +61,7 @@ def load(
         return runtime_loader.load_manifest(
             source,
             manage=manage,
+            version=version,
             storage_options=storage_options,
             working_directory=working_directory,
         )
@@ -66,6 +70,7 @@ def load(
     return runtime_loader.load_package(
         source,
         manage=manage,
+        version=version,
         setup_module=setup_module,
         working_directory=working_directory,
     )

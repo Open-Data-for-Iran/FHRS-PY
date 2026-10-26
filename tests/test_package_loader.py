@@ -63,6 +63,27 @@ class PackageLoaderTests(unittest.TestCase):
                 with self.assertRaises(error):
                     fhrs.load(self.package_name)
 
+    def test_selects_package_version_without_modifying_declaration(self):
+        self.write_setup(
+            "from fhrs.manifest.models import Dataset\n"
+            "dataset = Dataset(name='current', versions={'indexes': ['versions.json']})\n"
+        )
+        (self.package / "versions.json").write_text(
+            '{"one": {"manifest": "fixed.json"}}', encoding="utf-8"
+        )
+        (self.package / "fixed.json").write_text('{"name": "fixed"}', encoding="utf-8")
+        for loader in (fhrs.load, runtime.load_package):
+            with self.subTest(loader=loader):
+                fixed = loader(self.package_name, version="one", manage=True)
+                self.assertIsInstance(fixed, runtime.ManagedDataset)
+                self.assertEqual(fixed.name, "fixed")
+                self.assertEqual(
+                    Path(fixed.source.urlpath), self.package / "fixed.json"
+                )
+        setup = importlib.import_module(f"{self.package_name}.fhrs_setup")
+        self.assertEqual(setup.dataset.name, "current")
+        self.assertFalse(hasattr(setup.dataset, "_storage"))
+
     def test_runtime_load_package_uses_default_setup_module(self):
         from fhrs.runtime.loader import load_package
 

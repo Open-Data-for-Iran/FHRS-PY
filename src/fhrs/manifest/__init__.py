@@ -2,6 +2,6 @@
 
 from .discovery import discover
 from .dumper import dump
-from .loader import load
+from .loader import load, load_versions
 
-__all__ = ["discover", "dump", "load"]
+__all__ = ["discover", "dump", "load", "load_versions"]

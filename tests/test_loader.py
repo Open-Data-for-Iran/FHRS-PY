@@ -33,7 +33,11 @@ class LoaderTests(unittest.TestCase):
             ):
                 result = fhrs.load(source, working_directory="work")
                 load_manifest.assert_called_once_with(
-                    source, manage=False, storage_options=None, working_directory="work"
+                    source,
+                    manage=False,
+                    version=None,
+                    storage_options=None,
+                    working_directory="work",
                 )
                 self.assertIs(result, load_manifest.return_value)
 

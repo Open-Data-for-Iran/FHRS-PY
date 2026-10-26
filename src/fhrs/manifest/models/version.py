@@ -1,13 +1,17 @@
 """Version references, index contents, and dataset version declarations."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field, RootModel
 
 from ._base import RelativePath
-from .collection import ManifestReference
 
 
-class VersionReference(ManifestReference):
-    """A version manifest path relative to the file containing this reference."""
+class VersionReference(BaseModel, extra="forbid"):
+    """A version manifest path or URL with optional fsspec connection options."""
+
+    manifest: str = Field(min_length=1, pattern=r"\S")
+    storage_options: dict[str, Any] | None = None
 
 
 class VersionIndex(RootModel[dict[str, VersionReference]]):

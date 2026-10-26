@@ -523,9 +523,9 @@ dataset.version         # "2.3.1@2026-10-26.1~dev"
 Both are nonblank strings when provided and default to `None`. `schema_version`
 identifies the data contract; `release` identifies the published data snapshot.
 They are preserved when manifests are dumped and reloaded. They are independent
-of `fhrs_version`; neither changes the Python package version. These fields only
-describe the loaded dataset: loaders do not yet select releases or match schema
-compatibility. Collections do not inherit these dataset fields.
+of `fhrs_version`; neither changes the Python package version. These fields
+describe the loaded dataset; version selection uses the explicit catalog below,
+without schema compatibility matching. Collections do not inherit these fields.
 
 `version` is a Pydantic computed field on manifest datasets and a read-only
 property on runtime datasets. It is derived from `schema_version`, `release`,
@@ -545,6 +545,62 @@ break the data contract, minor changes add compatible features, and patch
 changes make compatible corrections to the contract. Data-only updates change
 `release`. Compatibility matching and semantic-version validation are not
 implemented by these properties.
+
+### Reading available versions
+
+Ordinary loading reads the current dataset without opening version indexes or
+historical manifests. To discover versions, combine inline entries and external
+index files explicitly:
+
+```python
+from fhrs import manifest
+
+index = manifest.load_versions("dataset/manifest.yaml")
+list(index.root)  # Available version identifiers; target manifests are not opened.
+fixed = manifest.load("dataset/manifest.yaml", version="1.0@001")
+```
+
+The main manifest declares entries and any number of index files:
+
+```yaml
+versions:
+  entries:
+    "1.0@001":
+      manifest: releases/001/manifest.yaml
+  indexes:
+    - versions/main.yaml
+    - versions/experimental.json
+```
+
+Each index file is a plain mapping of version identifiers to references, without
+an `entries` or `versions` wrapper. Index paths resolve beside the main manifest;
+relative version manifest paths resolve beside the file declaring the entry.
+Version references can also supply a full URL and optional fsspec options:
+
+```yaml
+"1.0@002":
+  manifest: s3://archive/releases/002/manifest.yaml
+  storage_options:
+    anon: true
+```
+
+An explicit `protocol` in `storage_options` makes `manifest` a direct backend
+path rather than a path relative to the declaring file. Explicit options replace
+inherited options, including when set to `{}`. Without explicit options, relative
+references inherit the main manifest's connection options; full URLs and absolute
+paths use their own default connection settings. Version references do not use
+named dataset storages.
+
+Discovery and selection both read all declared indexes and reject duplicate
+identifiers, including identical entries. Missing indexes and invalid declarations
+raise their original errors; unknown version identifiers raise `KeyError`.
+Selection opens only the chosen version manifest and resolves its collections.
+That manifest supplies its own resource locations and storages; its version
+indexes remain unopened.
+
+`fhrs.load()`, `runtime.load_manifest()`, and `runtime.load_package()` also accept
+`version=`. Package version paths resolve beside the setup module. Working
+directory and managed dataset options apply to the selected dataset as usual.
 
 See [the examples](examples/README.md) for layouts, storage declarations, and
 manifest pointers.
