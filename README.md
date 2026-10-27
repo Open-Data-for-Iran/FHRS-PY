@@ -21,7 +21,17 @@ dataset = fhrs.load("sci_dataset_list")
 dataset = fhrs.load(Path(".fhrs"))
 dataset = fhrs.load("./.fhrs")
 dataset = fhrs.load("https://example.org/manifest.yaml")
+
+dataset = fhrs.load("https://github.com/Open-Data-for-Iran/SCI_Dataset_List")
+
+dataset = fhrs.load("https://github.com/Iran-Open-Data/BSSIR/tree/dev")
 ```
+
+GitHub repository, `tree/<ref>`, and `blob/<ref>` browser URLs are converted to
+`github://owner:repo@ref/path` by `fhrs.parse_source.parse()`, which delegates to
+`parse_github()`. Repository-root
+URLs use the default branch. Tree/blob references occupy one URL segment; remaining
+segments are a repository path. Other sources pass through unchanged.
 
 `fhrs.load(source)` returns a runtime dataset from a package, manifest path, or
 URL. `PathLike` objects always select manifest loading. Strings containing `/`,

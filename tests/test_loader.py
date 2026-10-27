@@ -10,6 +10,23 @@ from fhrs import runtime
 
 
 class LoaderTests(unittest.TestCase):
+    def test_github_browser_url_uses_normalized_manifest_source(self):
+        with patch("fhrs.runtime.loader.load_manifest") as load_manifest:
+            result = fhrs.load(
+                "https://github.com/Iran-Open-Data/BSSIR/tree/dev",
+                manage=True,
+                storage_options={"token": "example"},
+                working_directory="work",
+            )
+            load_manifest.assert_called_once_with(
+                "github://Iran-Open-Data:BSSIR@dev",
+                manage=True,
+                version=None,
+                storage_options={"token": "example"},
+                working_directory="work",
+            )
+            self.assertIs(result, load_manifest.return_value)
+
     def test_explicit_paths_and_urls_use_manifest_loader(self):
         paths = (
             Path("survey"),

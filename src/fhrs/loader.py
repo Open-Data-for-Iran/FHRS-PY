@@ -3,6 +3,7 @@
 import os
 from typing import Any, Literal, overload
 
+from .parse_source import parse
 from .runtime import Dataset, ManagedDataset
 from .runtime import loader as runtime_loader
 
@@ -52,6 +53,7 @@ def load(
     configures manifest access and is only accepted for paths and URLs.
     manage=True selects managed subclasses without performing maintenance.
     """
+    source = parse(source)
     if (
         isinstance(source, os.PathLike)
         or source in (".", "..", ".fhrs")
