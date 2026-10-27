@@ -40,7 +40,7 @@ URL. `PathLike` objects always select manifest loading. Strings containing `/`,
 loading. Pass `Path("dataset")` to load a bare directory name unambiguously.
 Errors propagate from the selected loader; loading never falls back to another
 interpretation. `storage_options=` configures manifest access and is accepted
-only for paths and URLs. `working_directory=` applies to both kinds of source.
+only for paths and URLs. `local_directory=` applies to both kinds of source.
 
 Pass `manage=True` to select managed runtime subclasses:
 
@@ -49,13 +49,13 @@ dataset = fhrs.load("sci_dataset_list", manage=True)
 ```
 
 This returns `fhrs.runtime.ManagedDataset`, with managed collections, resources,
-resource members, tables, and storages, including working storage. Each managed
+resource members, tables, and storages, including local storage. Each managed
 class inherits its ordinary runtime counterpart. Sources remain ordinary
 runtime addresses. Loading performs no maintenance
 actions. The default `manage=False` keeps ordinary runtime types. Both
 `fhrs.runtime.load_manifest()` and `fhrs.runtime.load_package()` accept the flag.
 
-Use `ManagedResource.put()` to place file or directory contents in working storage:
+Use `ManagedResource.put()` to place file or directory contents in the workspace:
 
 ```python
 resource = dataset.resource("report")
@@ -67,12 +67,12 @@ directory = dataset.resource("parts").put("downloaded_parts")
 Inputs may be a local path, bytes, or an open binary stream (including
 `io.BytesIO`). Streams are read from their current position and left open.
 The destination uses the resource's dataset-relative key and declared suffix,
-under `working_directory`; parent directories are created as needed. It returns
+under `local_directory/workspace/`; parent directories are created as needed. It returns
 the destination `Path`. Existing files require `overwrite=True`. Writes are
 staged in a temporary file before publication, and failed copies leave any
 existing destination intact. Directory resources accept local directory paths
 only. Their contents, including nested and empty directories, are copied directly
-into the resource's working directory. `overwrite=True` replaces the entire
+into the resource's workspace directory. `overwrite=True` replaces the entire
 directory, removing stale contents. Directory replacement is not atomic: it uses
 a temporary backup and restores the original if publication fails. If restoration
 also fails, the backup is retained and its path is reported in the error.
@@ -80,12 +80,12 @@ Read-only backup files are made writable before deletion. If cleanup still
 fails after a successful replacement, `.put()` returns the destination and emits
 a `RuntimeWarning` with the retained temporary directory's path.
 The method does not change manifest locations, size, or checksums. The name
-`working` is reserved for runtime storage and cannot be declared as a storage
+`local` is reserved for runtime storage and cannot be declared as a storage
 name or a location name.
 
 
 Use `ManagedResource.add(path, data, *, overwrite=False)` to write one file inside
-an existing or new directory resource in working storage:
+an existing or new directory resource in the workspace:
 
 ```python
 pages = dataset.resource("dataset_pages")
@@ -102,7 +102,7 @@ match file `put()`. Other files and the manifest are preserved.
 
 
 Use `ManagedResource.remove(path)` to remove a single file from a directory
-resource's working storage:
+resource's workspace:
 
 ```python
 pages.remove("20797.html")
@@ -120,7 +120,7 @@ The declaration must be a `fhrs.manifest.models.Dataset`. Hyphens in package nam
 accepted as underscores, so `sci-dataset-list` works too. Relative resource paths,
 embedded storage, and collection manifest references resolve beside
 `fhrs_setup.py`. Loading copies the declaration, leaving the package's dataset
-object unchanged. Pass `working_directory=` to choose the local working folder.
+object unchanged. Pass `local_directory=` to choose the local folder.
 As with any Python import, loading executes the package's setup module.
 
 Package loading is also available as `fhrs.runtime.load_package()` (defined
@@ -240,47 +240,62 @@ for source in dataset.resource("data").sources:
 ```
 
 `resource.source()` selects the first declared location. If no locations are
-declared, it selects the local `working` source. Table `.load()` and directory
+declared, it selects the `local` source in the workspace. Table `.load()` and directory
 member `.files()` follow the same rule. This does not check whether files exist:
 a missing selected source raises its normal read error rather than trying another
-source. Working paths are not added to manifest locations or `.sources`.
+source. Local paths are not added to manifest locations or `.sources`.
 
-Every runtime resource also supports an explicitly selected `working` source:
+Every runtime resource also supports an explicitly selected `local` source:
 
 ```python
-dataset = runtime.load_manifest("examples/basic", working_directory="local-data")
-local = dataset.resource("data").source("working")
-working = dataset.storage("working")  # Also available in dataset.storages.
-local = working.resolve("data")
+dataset = runtime.load_manifest("examples/basic", local_directory="local-data")
+source = dataset.resource("data").source("local")
+local = dataset.storage("local")  # Also available in dataset.storages.
+source = local.resolve("workspace/data")
 ```
 
-`resource.working_path` is a convenience property returning the local working
+`resource.workspace_path` is a convenience property returning the editable
 address as a `pathlib.Path`, for both ordinary and managed resources:
 
 ```python
-path = dataset.resource("data").working_path
+path = dataset.resource("data").workspace_path
 ```
 
 It works for files and directories, includes the declared file suffix and nested
-collection path, and always selects working storage even when the resource has
+collection path, and always selects the local workspace even when the resource has
 remote locations. Access does not open resource contents or create anything;
-working-storage path checks still apply.
+workspace path checks still apply. Resource paths cannot escape into the
+sibling `objects/` area, including through resource symlinks.
 
-The working directory defaults to `data/<dataset.name>` under the current
+The local directory defaults to `data/<dataset.name>` under the current
 directory. Dataset initialization replaces `<dataset.name>` with the manifest's
 name in any supplied path and resolves it to an absolute path.
 Dataset and collection names use 1–64 lowercase ASCII letters, digits,
 underscores, or hyphens. Surrounding whitespace is stripped. Uppercase input,
 dots, and Unicode names are rejected; use `title` for display text.
 Dataset names are required; collection names may be omitted or `None`.
-An explicit `working_directory` overrides this entire path; it can also be passed
-to `runtime.Dataset(..., working_directory=...)`. Local resource paths use
-`resource.key + (resource.suffix or "")` beneath that directory. Directories
-support the same selection through `member.source("working")` and
-`member.files(source="working")`. Selecting a working source creates no files
+An explicit `local_directory` overrides this entire path; it can also be passed
+to `runtime.Dataset(..., local_directory=...)`. Editable resource paths use
+`resource.key + (resource.suffix or "")` beneath its `workspace/` subdirectory:
+
+```text
+data/<dataset>/             # local_directory and local storage root
+  workspace/               # put(), add(), remove(), and default local reads
+  objects/                 # Reserved for content-addressed objects
+```
+
+The object store is not implemented by this workspace change. The local storage's
+`resolve()` still resolves explicit paths from `local_directory`, so declared
+locations using `storage: local` retain their literal storage-relative paths.
+Existing editable files directly under the local directory are not moved
+automatically; place them under `workspace/` to use the default local source.
+
+Directories
+support the same selection through `member.source("local")` and
+`member.files(source="local")`. Selecting a local source creates no files
 or directories. It is excluded from `sources` and manifest dumps, so default
-reads use the first declared location, or working storage when no locations are declared. The storage name and location name `working`
-are reserved and rejected during manifest validation. Use `working_directory`
+reads use the first declared location, or local storage when no locations are declared. The storage name and location name `local`
+are reserved and rejected during manifest validation. Use `local_directory`
 to configure the generated local storage.
 
 Directory resource manifests may declare `members`, mapping nonempty names to nonempty
@@ -338,7 +353,7 @@ path checks and mirror selection as declared members; files are listed only when
 calling `inline.source("local").glob()`.
 
 Use `member.files()` to return a sorted tuple of matching file `Source` objects
-from the first declared mirror (or working storage if none are declared),
+from the first declared mirror (or local storage if none are declared),
 or `member.files(source="local")` to select a
 location/storage by name. It refreshes matches on each call, returns `()` when
 none match, and propagates filesystem errors. It does not combine mirrors or
@@ -409,7 +424,7 @@ runtime constructor.
 
 Table references are read in declared order and concatenated using the chosen
 backend. Source selection and reader options are forwarded to each reference.
-The default selects each resource's first declared mirror, or working storage
+The default selects each resource's first declared mirror, or local storage
 when no locations are declared. Unknown readers or backends
 raise `ValueError`. Add a reader instance with `READERS["format"] = MyReader()`;
 custom readers implement `BaseReader.read_pandas()` and `read_polars()`.
@@ -425,7 +440,7 @@ Binding tables performs no file access or column-schema inference.
 
 ```python
 # resources={"rss_catalog": Resource(suffix=".csv")}
-frame = dataset.table("rss_catalog").load(source="working")
+frame = dataset.table("rss_catalog").load(source="local")
 ```
 
 The Parquet reader supports pandas and Polars, named sources, column selection
@@ -609,7 +624,7 @@ That manifest supplies its own resource locations and storages; its version
 indexes remain unopened.
 
 `fhrs.load()`, `runtime.load_manifest()`, and `runtime.load_package()` also accept
-`version=`. Package version paths resolve beside the setup module. Working
+`version=`. Package version paths resolve beside the setup module. Local
 directory and managed dataset options apply to the selected dataset as usual.
 
 See [the examples](examples/README.md) for layouts, storage declarations, and

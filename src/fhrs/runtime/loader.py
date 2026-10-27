@@ -19,7 +19,7 @@ def load_manifest(
     manage: Literal[True],
     version: str | None = None,
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> ManagedDataset: ...
 
 
@@ -30,7 +30,7 @@ def load_manifest(
     manage: bool = False,
     version: str | None = None,
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset: ...
 
 
@@ -40,12 +40,12 @@ def load_manifest(
     manage: bool = False,
     version: str | None = None,
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset:
     """Load a manifest, optionally binding managed runtime subclasses."""
     manifest = read_manifest(urlpath, version=version, storage_options=storage_options)
     dataset_type = ManagedDataset if manage else Dataset
-    return dataset_type(manifest, working_directory=working_directory)
+    return dataset_type(manifest, local_directory=local_directory)
 
 
 @overload
@@ -55,7 +55,7 @@ def load_package(
     manage: Literal[True],
     version: str | None = None,
     setup_module: str = "fhrs_setup",
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> ManagedDataset: ...
 
 
@@ -66,7 +66,7 @@ def load_package(
     manage: bool = False,
     version: str | None = None,
     setup_module: str = "fhrs_setup",
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset: ...
 
 
@@ -76,7 +76,7 @@ def load_package(
     manage: bool = False,
     version: str | None = None,
     setup_module: str = "fhrs_setup",
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset:
     """Load ``<package_name>.<setup_module>.dataset`` as a runtime dataset.
 
@@ -104,4 +104,4 @@ def load_package(
         else _resolve_collection(manifest)
     )
     dataset_type = ManagedDataset if manage else Dataset
-    return dataset_type(manifest, working_directory=working_directory)
+    return dataset_type(manifest, local_directory=local_directory)

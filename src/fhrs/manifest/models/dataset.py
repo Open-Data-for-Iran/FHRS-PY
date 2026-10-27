@@ -68,9 +68,9 @@ class Dataset(BaseCollection):
 
     @model_validator(mode="after")
     def check_storage_names(self) -> Self:
-        if "working" in self.storages:
+        if "local" in self.storages:
             raise ValueError(
-                "Storage name 'working' is reserved for runtime working storage; "
-                "use working_directory to configure its location"
+                "Storage name 'local' is reserved for runtime local storage; "
+                "use local_directory to configure its location"
             )
         return self

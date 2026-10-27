@@ -15,7 +15,7 @@ from fhrs.manifest.models.storage import (
 
 
 class StorageModelTests(unittest.TestCase):
-    def test_working_storage_name_is_reserved(self):
+    def test_local_storage_name_is_reserved(self):
         for declaration in (
             {"protocol": "memory"},
             {"type": "embedded", "path": "originals"},
@@ -23,14 +23,14 @@ class StorageModelTests(unittest.TestCase):
             with (
                 self.subTest(declaration=declaration),
                 self.assertRaisesRegex(
-                    ValidationError, "working.*reserved.*working_directory"
+                    ValidationError, "local.*reserved.*local_directory"
                 ),
             ):
-                Dataset(name="survey", storages={"working": declaration})
+                Dataset(name="survey", storages={"local": declaration})
         dataset = Dataset(
-            name="survey", storages={"working_copy": {"protocol": "memory"}}
+            name="survey", storages={"local_copy": {"protocol": "memory"}}
         )
-        self.assertIn("working_copy", dataset.storages)
+        self.assertIn("local_copy", dataset.storages)
 
     def test_original_defaults_to_false_and_requires_a_boolean_for_all_storages(self):
         for model, fields in (

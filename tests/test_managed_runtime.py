@@ -37,7 +37,7 @@ class ManagedRuntimeTests(unittest.TestCase):
             connect.assert_not_called()
 
         self.assertIsInstance(dataset, runtime.Dataset)
-        for name in ("working", "archive"):
+        for name in ("local", "archive"):
             storage = dataset.storage(name)
             self.assertIsInstance(storage, runtime.ManagedStorage)
             self.assertIsInstance(storage, runtime.Storage)
@@ -72,9 +72,9 @@ class ManagedRuntimeTests(unittest.TestCase):
         self.assertIs(nested.parent, wave)
         self.assertIs(wave.parent, dataset)
         self.assertIs(dataset.resource("wave/nested/raw"), nested.resource("raw"))
-        working = nested.resource("raw").source("working")
+        local = nested.resource("raw").source("local")
         self.assertEqual(
-            Path(working.urlpath), dataset.working_directory / "wave/nested/raw"
+            Path(local.urlpath), dataset.local_directory / "workspace/wave/nested/raw"
         )
 
     def test_plain_dataset_keeps_plain_runtime_objects(self):
@@ -90,10 +90,10 @@ class ManagedRuntimeTests(unittest.TestCase):
         for load in (fhrs.load, runtime.load_manifest):
             for manage in (False, True):
                 with self.subTest(loader=load, manage=manage):
-                    dataset = load(source, manage=manage, working_directory="work")
+                    dataset = load(source, manage=manage, local_directory="work")
                     expected = runtime.ManagedDataset if manage else runtime.Dataset
                     self.assertIs(type(dataset), expected)
-                    self.assertEqual(dataset.working_directory, Path("work").resolve())
+                    self.assertEqual(dataset.local_directory, Path("work").resolve())
                     notes = (
                         dataset.collection("waves")
                         .collection("1403")

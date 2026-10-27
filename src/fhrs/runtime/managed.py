@@ -8,7 +8,7 @@ from typing import BinaryIO, cast
 
 from .._utils.put import put_directory, put_file
 from .objects import Collection, Dataset, Resource, ResourceMember, Storage, Table
-from .objects.storage import _WorkingStorage
+from .objects.storage import LocalStorage
 
 
 class ManagedResourceMember(ResourceMember):
@@ -44,7 +44,7 @@ class ManagedResource(Resource):
         *,
         overwrite: bool = False,
     ) -> Path:
-        """Place file or directory content in working storage; return its path.
+        """Place file or directory content in the workspace; return its path.
 
         Paths are opened in binary mode. Caller-owned binary streams are read
         from their current position and left open. Existing files require
@@ -53,7 +53,7 @@ class ManagedResource(Resource):
         directory publication failures restore the original when possible.
         Manifest declarations are never modified.
         """
-        destination = self.working_path
+        destination = self.workspace_path
         if not overwrite and destination.exists():
             raise FileExistsError(destination)
 
@@ -71,7 +71,7 @@ class ManagedResource(Resource):
         *,
         overwrite: bool = False,
     ) -> Path:
-        """Write one file inside a directory resource's working storage.
+        """Write one file inside a directory resource's workspace.
 
         Accept a relative file path using forward slashes, without glob patterns
         or traversal. Create parent directories and preserve other files.
@@ -82,7 +82,7 @@ class ManagedResource(Resource):
         return put_file(data, self._directory_file_path(path), overwrite=overwrite)
 
     def remove(self, path: str) -> None:
-        """Remove one file from a directory resource's working storage.
+        """Remove one file from a directory resource's workspace.
 
         Use the same relative paths as add(). Missing files raise
         FileNotFoundError; directories raise IsADirectoryError. Other files,
@@ -96,7 +96,7 @@ class ManagedResource(Resource):
         destination.unlink()
 
     def _directory_file_path(self, path: str) -> Path:
-        """Validate a single file path within this resource's working directory."""
+        """Validate a single file path within this resource's workspace."""
         if (
             not path
             or any(part in ("", ".", "..") for part in path.split("/"))
@@ -105,7 +105,7 @@ class ManagedResource(Resource):
             raise ValueError(
                 f"Expected a relative file path inside the resource: {path!r}"
             )
-        directory = self.working_path.resolve()
+        directory = self.workspace_path.resolve()
         destination = directory / path
         if not destination.resolve().is_relative_to(directory):
             raise ValueError(f"File path escapes its directory resource: {path!r}")
@@ -128,8 +128,8 @@ class ManagedStorage(Storage):
     __slots__ = ()
 
 
-class _ManagedWorkingStorage(_WorkingStorage, ManagedStorage):
-    """Managed storage rooted at the dataset's working directory."""
+class _ManagedLocalStorage(LocalStorage, ManagedStorage):
+    """Managed storage rooted at the dataset's local directory."""
 
     __slots__ = ()
 
@@ -161,7 +161,7 @@ class ManagedDataset(Dataset):
     _resource_type = ManagedResource
     _table_type = ManagedTable
     _storage_type = ManagedStorage
-    _working_storage_type = _ManagedWorkingStorage
+    _local_storage_type = _ManagedLocalStorage
 
     def resource(self, name: str) -> ManagedResource | ManagedResourceMember:
         return cast(ManagedResource | ManagedResourceMember, super().resource(name))

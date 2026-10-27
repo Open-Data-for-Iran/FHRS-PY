@@ -16,13 +16,13 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 class ResourceLocationTests(unittest.TestCase):
-    def test_working_location_name_is_reserved(self):
-        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
-            Location(uri="memory://data", name="working")
-        for name in (None, "primary", "working_copy"):
+    def test_local_location_name_is_reserved(self):
+        with self.assertRaisesRegex(ValidationError, "local.*reserved"):
+            Location(uri="memory://data", name="local")
+        for name in (None, "primary", "local_copy"):
             with self.subTest(name=name):
                 self.assertEqual(Location(uri="memory://data", name=name).name, name)
-        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
+        with self.assertRaisesRegex(ValidationError, "local.*reserved"):
             DatasetManifest.model_validate(
                 {
                     "name": "survey",
@@ -31,7 +31,7 @@ class ResourceLocationTests(unittest.TestCase):
                             "resources": {
                                 "data": {
                                     "locations": [
-                                        {"name": "working", "uri": "memory://data"}
+                                        {"name": "local", "uri": "memory://data"}
                                     ]
                                 }
                             }

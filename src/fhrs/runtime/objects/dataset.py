@@ -13,7 +13,7 @@ from ._base import BaseCollection
 from .collection import Collection
 from .resource import Resource
 from .source import Source
-from .storage import Storage, _WorkingStorage
+from .storage import LocalStorage, Storage
 from .table import Table
 
 
@@ -26,29 +26,29 @@ class Dataset(BaseCollection):
     _resource_type: ClassVar[type[Resource]] = Resource
     _table_type: ClassVar[type[Table]] = Table
     _storage_type: ClassVar[type[Storage]] = Storage
-    _working_storage_type: ClassVar[type[_WorkingStorage]] = _WorkingStorage
+    _local_storage_type: ClassVar[type[LocalStorage]] = LocalStorage
 
     manifest: DatasetManifest
     source: Source | None = None
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>"
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>"
     storages: Mapping[str, Storage] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        directory = os.fspath(self.working_directory)
+        directory = os.fspath(self.local_directory)
         if "<dataset.name>" in directory:
             if Path(self.name).name != self.name or self.name in (".", ".."):
                 raise ValueError(
-                    "Working directory template requires a dataset name without path components"
+                    "Local directory template requires a dataset name without path components"
                 )
             directory = directory.replace("<dataset.name>", self.name)
-        self._setattr("working_directory", Path(directory).resolve())
+        self._setattr("local_directory", Path(directory).resolve())
         if self.source is None and hasattr(self.manifest, "_storage"):
             self._setattr("source", Source(**self.manifest._storage))
         self._set_mapping(
             "storages",
             {
-                "working": self._working_storage_type(
-                    StorageManifest(protocol="file"), name="working", dataset=self
+                "local": self._local_storage_type(
+                    StorageManifest(protocol="file"), name="local", dataset=self
                 ),
                 **{
                     name: self._storage_type(manifest, name=name, dataset=self)

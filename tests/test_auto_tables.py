@@ -60,7 +60,7 @@ class AutoTableTests(unittest.TestCase):
         self.assertEqual(dataset.table("rows").title, "Explicit")
         self.assertIs(dataset.table("rows").resources[0], dataset.resource("other"))
 
-    def test_inferred_csv_loads_from_working_storage(self):
+    def test_inferred_csv_loads_from_local_storage(self):
         try:
             import pandas  # noqa: F401
         except ImportError:
@@ -70,11 +70,11 @@ class AutoTableTests(unittest.TestCase):
                 manifest.models.Dataset(
                     name="survey", resources={"rows": {"suffix": ".csv"}}
                 ),
-                working_directory=Path(directory),
+                local_directory=Path(directory),
             )
             dataset.resource("rows").put(b"id,value\n1,10\n")
             self.assertEqual(
-                dataset.table("rows").load(source="working")["id"].tolist(), [1]
+                dataset.table("rows").load(source="local")["id"].tolist(), [1]
             )
 
 

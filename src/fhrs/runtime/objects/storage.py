@@ -77,19 +77,19 @@ class Storage(BaseRuntime):
         return Source(urlpath, storage_options=options)
 
 
-class _WorkingStorage(Storage):
-    """Local storage rooted at the runtime dataset's working directory."""
+class LocalStorage(Storage):
+    """Local storage rooted at the runtime dataset's local directory."""
 
     __slots__ = ()
 
     @property
     def base_path(self) -> str:
         assert self.dataset is not None
-        return Path(self.dataset.working_directory).as_posix()
+        return Path(self.dataset.local_directory).as_posix()
 
     def resolve(self, uri: str) -> Source:
         root = Path(self.base_path)
         path = (root / uri).resolve()
         if not path.is_relative_to(root):
-            raise ValueError(f"Working resource path escapes its directory: {uri!r}")
+            raise ValueError(f"Local resource path escapes its directory: {uri!r}")
         return Source(path.as_posix())

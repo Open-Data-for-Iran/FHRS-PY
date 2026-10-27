@@ -41,11 +41,11 @@ class PackageLoaderTests(unittest.TestCase):
         (self.package / "original.xml").write_bytes(b"<dataset/>")
         (self.package / "wave.yaml").write_text("title: Wave\n", encoding="utf-8")
 
-        dataset = fhrs.load(self.package_name, working_directory=self.root / "work")
+        dataset = fhrs.load(self.package_name, local_directory=self.root / "work")
 
         self.assertIsInstance(dataset, runtime.Dataset)
         self.assertEqual(dataset.name, "survey")
-        self.assertEqual(dataset.working_directory, self.root / "work")
+        self.assertEqual(dataset.local_directory, self.root / "work")
         self.assertEqual(dataset.collection("wave").title, "Wave")
         self.assertIs(dataset.resource("xml").dataset, dataset)
         with dataset.resource("xml").sources[0].open() as stream:
@@ -105,10 +105,10 @@ class PackageLoaderTests(unittest.TestCase):
                 dataset = load(
                     self.package_name,
                     setup_module="custom_setup",
-                    working_directory=self.root / "custom-work",
+                    local_directory=self.root / "custom-work",
                 )
                 self.assertEqual(dataset.name, "custom")
-                self.assertEqual(dataset.working_directory, self.root / "custom-work")
+                self.assertEqual(dataset.local_directory, self.root / "custom-work")
                 self.assertEqual(
                     Path(dataset.source.urlpath), self.package / "custom_setup.py"
                 )

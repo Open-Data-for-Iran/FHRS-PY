@@ -16,9 +16,9 @@ class Location(BaseModel, extra="forbid"):
     @field_validator("name")
     @classmethod
     def check_name(cls, name: str | None) -> str | None:
-        if name == "working":
+        if name == "local":
             raise ValueError(
-                "Location name 'working' is reserved for runtime working storage"
+                "Location name 'local' is reserved for runtime local storage"
             )
         return name
 

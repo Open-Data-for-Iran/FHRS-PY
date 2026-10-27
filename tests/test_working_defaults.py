@@ -10,7 +10,7 @@ import fsspec
 from fhrs import manifest, runtime
 
 
-class WorkingDefaultChecks:
+class LocalDefaultChecks:
     backend: str
 
     def setUp(self):
@@ -19,7 +19,7 @@ class WorkingDefaultChecks:
                 self.skipTest(f"{dependency} is not installed")
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
-        self.root = Path(directory.name) / "working"
+        self.root = Path(directory.name) / "local"
         self.declaration = manifest.models.Dataset.model_validate(
             {
                 "name": "survey",
@@ -38,7 +38,7 @@ class WorkingDefaultChecks:
             }
         )
         self.dataset = runtime.ManagedDataset(
-            self.declaration, working_directory=self.root
+            self.declaration, local_directory=self.root
         )
 
     def parquet(self, ids):
@@ -49,15 +49,15 @@ class WorkingDefaultChecks:
         pq.write_table(pa.table({"id": ids}), stream)
         return stream.getvalue()
 
-    def test_defaults_resolve_working_without_io_or_manifest_changes(self):
+    def test_defaults_resolve_local_without_io_or_manifest_changes(self):
         before = self.declaration.model_dump()
         rows = self.dataset.resource("rows")
-        self.assertEqual(rows.source(), rows.source("working"))
-        self.assertEqual(rows.source(None), rows.source("working"))
+        self.assertEqual(rows.source(), rows.source("local"))
+        self.assertEqual(rows.source(None), rows.source("local"))
         self.assertEqual(rows.locations, ())
         self.assertEqual(rows.sources, ())
         member = self.dataset.resource("parts#csv")
-        self.assertEqual(member.source(), member.source("working"))
+        self.assertEqual(member.source(), member.source("local"))
         self.assertFalse(self.root.exists())
         self.assertEqual(self.declaration.model_dump(), before)
 
@@ -69,7 +69,7 @@ class WorkingDefaultChecks:
             parts.add(f"{name}.csv", f"id\n{identifier}\n".encode())
             parts.add(f"{name}.parquet", self.parquet([identifier]))
         for dataset_type in (runtime.Dataset, runtime.ManagedDataset):
-            dataset = dataset_type(self.declaration, working_directory=self.root)
+            dataset = dataset_type(self.declaration, local_directory=self.root)
             for name in ("rows", "columnar", "csv_parts", "parquet_parts"):
                 with self.subTest(dataset_type=dataset_type, table=name):
                     frame = dataset.table(name).load(backend=self.backend)
@@ -78,7 +78,7 @@ class WorkingDefaultChecks:
 
     def test_declared_sources_take_priority_and_do_not_fall_back_on_failure(self):
         memory = fsspec.filesystem("memory")
-        uri = f"memory://working-default-{uuid4().hex}"
+        uri = f"memory://local-default-{uuid4().hex}"
         memory.pipe(uri, b"id\n9\n")
         self.addCleanup(memory.rm, uri)
         declaration = manifest.models.Dataset(
@@ -90,7 +90,7 @@ class WorkingDefaultChecks:
                 }
             },
         )
-        dataset = runtime.ManagedDataset(declaration, working_directory=self.root)
+        dataset = runtime.ManagedDataset(declaration, local_directory=self.root)
         rows = dataset.resource("rows")
         rows.put(b"id\n1\n")
         self.assertIs(rows.source(), rows.sources[0])
@@ -99,7 +99,7 @@ class WorkingDefaultChecks:
         )
         self.assertEqual(
             list(
-                dataset.table("rows").load(backend=self.backend, source="working")["id"]
+                dataset.table("rows").load(backend=self.backend, source="local")["id"]
             ),
             [1],
         )
@@ -109,11 +109,11 @@ class WorkingDefaultChecks:
             dataset.table("rows").load(backend=self.backend)
 
 
-class PandasWorkingDefaultTests(WorkingDefaultChecks, unittest.TestCase):
+class PandasLocalDefaultTests(LocalDefaultChecks, unittest.TestCase):
     backend = "pandas"
 
 
-class PolarsWorkingDefaultTests(WorkingDefaultChecks, unittest.TestCase):
+class PolarsLocalDefaultTests(LocalDefaultChecks, unittest.TestCase):
     backend = "polars"
 
 

@@ -8,27 +8,28 @@ from pydantic import ValidationError
 from fhrs import manifest, runtime
 
 
-class WorkingSourceTests(unittest.TestCase):
-    def test_working_storage_resolves_paths_without_entering_manifest(self):
+class LocalSourceTests(unittest.TestCase):
+    def test_local_storage_resolves_paths_without_entering_manifest(self):
         dataset = runtime.Dataset(
             manifest.models.Dataset(
                 name="survey", resources={"report": {"suffix": ".pdf"}}
             )
         )
-        storage = dataset.storage("working")
-        self.assertIs(storage, dataset.storages["working"])
+        storage = dataset.storage("local")
+        self.assertIs(storage, dataset.storages["local"])
         self.assertIs(storage.dataset, dataset)
         self.assertEqual(storage.protocol, "file")
         self.assertEqual(Path(storage.base_path), Path.cwd() / "data/survey")
         self.assertEqual(
-            storage.resolve("report.pdf"), dataset.resource("report").source("working")
+            storage.resolve("workspace/report.pdf"),
+            dataset.resource("report").source("local"),
         )
         self.assertEqual(storage.filesystem().protocol, ("file", "local"))
-        self.assertNotIn("working", dataset.manifest.storages)
+        self.assertNotIn("local", dataset.manifest.storages)
         with self.assertRaises(ValueError):
             storage.resolve("../outside")
 
-    def test_working_path_is_local_for_files_directories_and_managed_resources(self):
+    def test_workspace_path_is_local_for_files_directories_and_managed_resources(self):
         declaration = manifest.models.Dataset(
             name="survey",
             collections={
@@ -45,17 +46,21 @@ class WorkingSourceTests(unittest.TestCase):
         )
         before = declaration.model_dump()
         with TemporaryDirectory() as directory:
-            root = Path(directory) / "working"
+            root = Path(directory) / "local"
             for dataset_type in (runtime.Dataset, runtime.ManagedDataset):
                 with self.subTest(dataset_type=dataset_type):
-                    dataset = dataset_type(declaration, working_directory=root)
+                    dataset = dataset_type(declaration, local_directory=root)
                     report = dataset.resource("wave/report")
                     parts = dataset.resource("wave/parts")
-                    self.assertIsInstance(report.working_path, Path)
-                    self.assertEqual(report.working_path, root / "wave/report.csv")
-                    self.assertEqual(parts.working_path, root / "wave/parts")
+                    self.assertIsInstance(report.workspace_path, Path)
                     self.assertEqual(
-                        report.working_path, Path(report.source("working").urlpath)
+                        report.workspace_path, root / "workspace/wave/report.csv"
+                    )
+                    self.assertEqual(
+                        parts.workspace_path, root / "workspace/wave/parts"
+                    )
+                    self.assertEqual(
+                        report.workspace_path, Path(report.source("local").urlpath)
                     )
                     self.assertEqual(
                         report.source().urlpath, "memory://remote/report.csv"
@@ -63,13 +68,13 @@ class WorkingSourceTests(unittest.TestCase):
                     self.assertFalse(root.exists())
         self.assertEqual(declaration.model_dump(), before)
 
-    def test_working_path_ignores_declared_working_location(self):
+    def test_workspace_path_ignores_declared_local_location(self):
         declaration = manifest.models.Dataset(
             name="survey",
             resources={
                 "report": {
                     "suffix": ".csv",
-                    "locations": [{"storage": "working", "uri": "archive.csv"}],
+                    "locations": [{"storage": "local", "uri": "archive.csv"}],
                 }
             },
         )
@@ -77,11 +82,13 @@ class WorkingSourceTests(unittest.TestCase):
             root = Path(directory)
             archive = root / "archive.csv"
             archive.write_bytes(b"original")
-            dataset = runtime.ManagedDataset(declaration, working_directory=root)
+            dataset = runtime.ManagedDataset(declaration, local_directory=root)
             report = dataset.resource("report")
-            self.assertEqual(report.working_path, root / "report.csv")
-            self.assertEqual(report.put(b"new", overwrite=True), root / "report.csv")
-            self.assertEqual((root / "report.csv").read_bytes(), b"new")
+            self.assertEqual(report.workspace_path, root / "workspace/report.csv")
+            self.assertEqual(
+                report.put(b"new", overwrite=True), root / "workspace/report.csv"
+            )
+            self.assertEqual((root / "workspace/report.csv").read_bytes(), b"new")
             self.assertEqual(archive.read_bytes(), b"original")
 
     def test_default_directory_is_captured_when_dataset_is_created(self):
@@ -90,13 +97,13 @@ class WorkingSourceTests(unittest.TestCase):
                 name="survey", resources={"report": {"suffix": ".pdf"}}
             )
         )
-        expected = Path.cwd() / "data/survey/report.pdf"
+        expected = Path.cwd() / "data/survey/workspace/report.pdf"
         with TemporaryDirectory() as directory:
             previous = Path.cwd()
             try:
                 os.chdir(directory)
                 self.assertEqual(
-                    Path(dataset.resource("report").source("working").path), expected
+                    Path(dataset.resource("report").source("local").path), expected
                 )
             finally:
                 os.chdir(previous)
@@ -120,62 +127,63 @@ class WorkingSourceTests(unittest.TestCase):
         before = declaration.model_dump()
         with TemporaryDirectory() as directory:
             root = Path(directory) / "work"
-            dataset = runtime.Dataset(declaration, working_directory=root)
+            dataset = runtime.Dataset(declaration, local_directory=root)
             report = dataset.resource("wave/report")
             self.assertFalse(root.exists())
             self.assertEqual(
-                Path(report.source("working").path), root / "wave/report.csv"
+                Path(report.source("local").path), root / "workspace/wave/report.csv"
             )
             self.assertEqual(
                 report.sources[0].urlpath, "https://example.org/report.csv"
             )
             self.assertEqual(len(report.sources), 1)
             parts = dataset.resource("wave/parts")
-            (root / "wave/parts").mkdir(parents=True)
-            (root / "wave/parts/a.csv").write_text("value\n1\n")
+            (root / "workspace/wave/parts").mkdir(parents=True)
+            (root / "workspace/wave/parts/a.csv").write_text("value\n1\n")
             for member in (parts.member("rows"), parts.member("member:*.csv")):
                 self.assertEqual(member.sources, ())
-                files = member.files(source="working")
+                files = member.files(source="local")
                 self.assertEqual(
-                    [Path(source.path) for source in files], [root / "wave/parts/a.csv"]
+                    [Path(source.path) for source in files],
+                    [root / "workspace/wave/parts/a.csv"],
                 )
         self.assertEqual(declaration.model_dump(), before)
 
-    def test_loader_accepts_working_directory(self):
+    def test_loader_accepts_local_directory(self):
         examples = Path(__file__).resolve().parents[1] / "examples/basic"
-        dataset = runtime.load_manifest(examples, working_directory="local-data")
+        dataset = runtime.load_manifest(examples, local_directory="local-data")
         self.assertEqual(
-            Path(dataset.resource("data").source("working").path),
-            Path.cwd() / "local-data/data",
+            Path(dataset.resource("data").source("local").path),
+            Path.cwd() / "local-data/workspace/data",
         )
 
     def test_loader_defaults_to_dataset_data_directory(self):
         examples = Path(__file__).resolve().parents[1] / "examples/basic"
         dataset = runtime.load_manifest(examples)
         self.assertEqual(
-            Path(dataset.resource("data").source("working").path),
-            Path.cwd() / "data" / dataset.name / "data",
+            Path(dataset.resource("data").source("local").path),
+            Path.cwd() / "data" / dataset.name / "workspace" / "data",
         )
 
-    def test_working_directory_expands_dataset_name_template(self):
+    def test_local_directory_expands_dataset_name_template(self):
         for directory in (
             "cache/<dataset.name>/files",
             Path("cache/<dataset.name>/files"),
         ):
             with self.subTest(directory=directory):
                 dataset = runtime.Dataset(
-                    manifest.models.Dataset(name="survey"), working_directory=directory
+                    manifest.models.Dataset(name="survey"), local_directory=directory
                 )
                 self.assertEqual(
-                    dataset.working_directory, Path.cwd() / "cache/survey/files"
+                    dataset.local_directory, Path.cwd() / "cache/survey/files"
                 )
 
-    def test_declared_working_location_is_rejected(self):
-        with self.assertRaisesRegex(ValidationError, "working.*reserved"):
+    def test_declared_local_location_is_rejected(self):
+        with self.assertRaisesRegex(ValidationError, "local.*reserved"):
             manifest.models.Dataset(
                 name="survey",
                 resources={
-                    "data": {"locations": [{"name": "working", "uri": "memory://data"}]}
+                    "data": {"locations": [{"name": "local", "uri": "memory://data"}]}
                 },
             )
 
@@ -184,11 +192,11 @@ class WorkingSourceTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 runtime.Dataset(manifest.models.Dataset(name=name))
 
-    def test_working_path_cannot_escape_directory(self):
+    def test_workspace_path_cannot_escape_directory(self):
         dataset = runtime.Dataset(
             manifest.models.Dataset(name="survey", resources={"../outside": {}})
         )
         with self.assertRaises(ValueError):
-            dataset.resources["../outside"].source("working")
+            dataset.resources["../outside"].source("local")
         with self.assertRaises(ValueError):
-            _ = dataset.resources["../outside"].working_path
+            _ = dataset.resources["../outside"].workspace_path

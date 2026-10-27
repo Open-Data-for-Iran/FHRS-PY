@@ -27,7 +27,7 @@ class ResourceMemberTests(unittest.TestCase):
                     with self.assertRaises(KeyError):
                         resource.member("missing")
 
-    def test_members_without_locations_list_working_files(self):
+    def test_members_without_locations_list_local_files(self):
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
@@ -42,7 +42,7 @@ class ResourceMemberTests(unittest.TestCase):
                     },
                 }
             ),
-            working_directory=directory.name,
+            local_directory=directory.name,
         )
         member = dataset.resource("directory#rows")
         self.assertEqual(member.sources, ())

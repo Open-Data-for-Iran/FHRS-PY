@@ -16,7 +16,7 @@ def load(
     version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> ManagedDataset: ...
 
 
@@ -28,7 +28,7 @@ def load(
     version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset: ...
 
 
@@ -39,7 +39,7 @@ def load(
     version: str | None = None,
     setup_module: str = "fhrs_setup",
     storage_options: dict[str, Any] | None = None,
-    working_directory: str | os.PathLike[str] = "data/<dataset.name>",
+    local_directory: str | os.PathLike[str] = "data/<dataset.name>",
 ) -> Dataset:
     """Load a package declaration or manifest as a runtime dataset.
 
@@ -65,7 +65,7 @@ def load(
             manage=manage,
             version=version,
             storage_options=storage_options,
-            working_directory=working_directory,
+            local_directory=local_directory,
         )
     if storage_options is not None:
         raise ValueError("storage_options is only supported for manifest paths or URLs")
@@ -74,5 +74,5 @@ def load(
         manage=manage,
         version=version,
         setup_module=setup_module,
-        working_directory=working_directory,
+        local_directory=local_directory,
     )

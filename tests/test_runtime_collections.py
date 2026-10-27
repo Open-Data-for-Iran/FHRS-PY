@@ -366,8 +366,8 @@ class RuntimeCollectionTests(unittest.TestCase):
                     self.assertEqual(resource.sources, parent.resource("data").sources)
                     self.assertEqual(resource.key, parent.resource("data").key)
                     self.assertEqual(
-                        resource.source("working"),
-                        parent.resource("data").source("working"),
+                        resource.source("local"),
+                        parent.resource("data").source("local"),
                     )
 
     def test_table_constructor_resolves_resources_from_parent(self):

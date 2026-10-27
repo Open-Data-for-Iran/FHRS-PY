@@ -15,7 +15,8 @@ class ManagedPutTests(unittest.TestCase):
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
-        self.work = self.root / "work"
+        self.local = self.root / "local"
+        self.work = self.local / "workspace"
         self.dataset = runtime.ManagedDataset(
             manifest.models.Dataset.model_validate(
                 {
@@ -33,7 +34,7 @@ class ManagedPutTests(unittest.TestCase):
                     },
                 }
             ),
-            working_directory=self.work,
+            local_directory=self.local,
         )
         self.resource = self.dataset.resource("report")
         self.destination = self.work / "report.csv"
@@ -53,9 +54,7 @@ class ManagedPutTests(unittest.TestCase):
         self.assertEqual(self.dataset.manifest.model_dump(), before)
         self.assertIs(self.resource.sources, sources)
         self.assertEqual(self.resource.source("primary").urlpath, "memory://other")
-        self.assertEqual(
-            Path(self.resource.source("working").urlpath), self.destination
-        )
+        self.assertEqual(Path(self.resource.source("local").urlpath), self.destination)
 
     def test_nested_paths_use_declared_suffix_and_create_parent_directories(self):
         resource = self.dataset.resource("wave/archive")
@@ -147,10 +146,10 @@ class ManagedPutTests(unittest.TestCase):
             self.dataset.resource("parts").put(b"directory")
         self.assertFalse((self.work / "parts").exists())
 
-    def test_rejects_destination_outside_working_storage(self):
+    def test_rejects_destination_outside_local_storage(self):
         dataset = runtime.ManagedDataset(
             manifest.models.Dataset(name="survey", resources={"../outside": {}}),
-            working_directory=self.work,
+            local_directory=self.local,
         )
         with self.assertRaises(ValueError):
             dataset.resources["../outside"].put(b"content")
@@ -325,7 +324,7 @@ class ManagedPutTests(unittest.TestCase):
 
     def test_directory_does_not_replace_a_file_destination(self):
         source = self.make_directory()
-        self.work.mkdir()
+        self.work.mkdir(parents=True)
         destination = self.work / "parts"
         destination.write_bytes(b"keep")
         with self.assertRaises(NotADirectoryError):

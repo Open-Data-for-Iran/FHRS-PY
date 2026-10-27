@@ -95,7 +95,7 @@ class ParquetReaderChecks:
         self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
             manifest.models.Dataset(name="empty", resources={"rows": {}}),
-            working_directory=directory.name,
+            local_directory=directory.name,
         )
         with self.assertRaises(FileNotFoundError):
             read(dataset.resource("rows"))

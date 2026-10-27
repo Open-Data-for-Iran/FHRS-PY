@@ -70,7 +70,7 @@ class CSVReaderChecks:
         self.assertEqual(self.ids(self.read(resource)), [1])
         self.assertEqual(self.ids(self.read(resource, source="backup")), [3])
 
-    def test_missing_working_files_raise_file_not_found(self):
+    def test_missing_local_files_raise_file_not_found(self):
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         dataset = runtime.Dataset(
@@ -83,7 +83,7 @@ class CSVReaderChecks:
                     },
                 }
             ),
-            working_directory=directory.name,
+            local_directory=directory.name,
         )
         for key in ("file", "directory#member:*.csv"):
             with (

@@ -16,14 +16,14 @@ class LoaderTests(unittest.TestCase):
                 "https://github.com/Iran-Open-Data/BSSIR/tree/dev",
                 manage=True,
                 storage_options={"token": "example"},
-                working_directory="work",
+                local_directory="work",
             )
             load_manifest.assert_called_once_with(
                 "github://Iran-Open-Data:BSSIR@dev",
                 manage=True,
                 version=None,
                 storage_options={"token": "example"},
-                working_directory="work",
+                local_directory="work",
             )
             self.assertIs(result, load_manifest.return_value)
 
@@ -48,13 +48,13 @@ class LoaderTests(unittest.TestCase):
                 self.subTest(source=source),
                 patch("fhrs.runtime.loader.load_manifest") as load_manifest,
             ):
-                result = fhrs.load(source, working_directory="work")
+                result = fhrs.load(source, local_directory="work")
                 load_manifest.assert_called_once_with(
                     source,
                     manage=False,
                     version=None,
                     storage_options=None,
-                    working_directory="work",
+                    local_directory="work",
                 )
                 self.assertIs(result, load_manifest.return_value)
 
@@ -72,10 +72,10 @@ class LoaderTests(unittest.TestCase):
         filesystem.pipe(f"{root}/fhrs.yaml", b"name: remote\n")
         self.addCleanup(filesystem.rm, root, recursive=True)
         dataset = fhrs.load(
-            root, storage_options={"protocol": "memory"}, working_directory="work"
+            root, storage_options={"protocol": "memory"}, local_directory="work"
         )
         self.assertEqual(dataset.name, "remote")
-        self.assertEqual(dataset.working_directory, Path("work").resolve())
+        self.assertEqual(dataset.local_directory, Path("work").resolve())
         self.assertEqual(dataset.source.storage_options, {"protocol": "memory"})
         self.assertEqual(fhrs.load(f"memory://{root}/fhrs.yaml").name, "remote")
 

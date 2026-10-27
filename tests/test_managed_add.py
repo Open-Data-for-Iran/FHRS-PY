@@ -21,7 +21,7 @@ class ManagedAddTests(unittest.TestCase):
                     },
                 }
             ),
-            working_directory=self.root / "work",
+            local_directory=self.root / "work",
         )
         self.pages = self.dataset.resource("pages")
 
@@ -31,12 +31,16 @@ class ManagedAddTests(unittest.TestCase):
         before = self.dataset.manifest.model_dump()
         for index, data in enumerate((source, str(source), b"page", BytesIO(b"page"))):
             result = self.pages.add(f"nested/{index}.html", data)
-            self.assertEqual(result, self.root / f"work/pages/nested/{index}.html")
+            self.assertEqual(
+                result, self.root / f"work/workspace/pages/nested/{index}.html"
+            )
             self.assertEqual(result.read_bytes(), b"page")
-        self.assertEqual(len(list((self.root / "work/pages/nested").iterdir())), 4)
+        self.assertEqual(
+            len(list((self.root / "work/workspace/pages/nested").iterdir())), 4
+        )
         self.assertEqual(before, self.dataset.manifest.model_dump())
         result = self.dataset.resource("wave/pages").add("1.html", b"nested")
-        self.assertEqual(result, self.root / "work/wave/pages/1.html")
+        self.assertEqual(result, self.root / "work/workspace/wave/pages/1.html")
 
     def test_add_requires_explicit_overwrite_and_preserves_stream_ownership(self):
         result = self.pages.add("1.html", b"original")
@@ -80,7 +84,7 @@ class ManagedAddTests(unittest.TestCase):
     def test_add_rejects_symlink_escape(self):
         outside = self.root / "outside"
         outside.mkdir()
-        directory = self.root / "work/pages"
+        directory = self.root / "work/workspace/pages"
         directory.mkdir(parents=True)
         try:
             (directory / "linked").symlink_to(outside, target_is_directory=True)

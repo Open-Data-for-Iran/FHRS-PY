@@ -73,7 +73,7 @@ class ResourceMember(BaseRuntime):
         )
 
     def files(self, source: str | None = None) -> tuple[Source, ...]:
-        """List sorted files from the first location, or working data if none exist.
+        """List sorted files from the first location, or local data if none exist.
 
         Matches are refreshed on every call; no matches returns an empty tuple.
         Filesystem errors propagate without falling back to another mirror.
